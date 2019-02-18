@@ -21,6 +21,7 @@ namespace MockStockBackend.Controllers
         [HttpPost]
         public async Task<string> CreateUser()
         {
+            Console.WriteLine("create user called");
             // 1 - Get user creation details (username, password)
             var username = (string)HttpContext.Request.Headers["username"];
             var password = (string)HttpContext.Request.Headers["password"];

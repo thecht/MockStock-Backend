@@ -13,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MockStockBackend.DataModels;
 using MockStockBackend.Services;
+using MockStockBackend.Middleware;
 
 namespace MockStockBackend
 {
@@ -38,16 +39,8 @@ namespace MockStockBackend
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
-            else
-            {
-                app.UseHsts();
-            }
-
             app.UseHttpsRedirection();
+            app.UseMSAuthenticationMiddleware();
             app.UseMvc();
         }
     }

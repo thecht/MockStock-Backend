@@ -24,15 +24,19 @@ namespace MockStockBackend.Controllers
             // 1 - Get user creation details (username, password)
             var username = (string)HttpContext.Request.Headers["username"];
             var password = (string)HttpContext.Request.Headers["password"];
-
             if(username == null || password == null)
             {
                 HttpContext.Response.StatusCode = 400;
-                HttpContext.Abort();
+                return "{\"error\": \"incomplete headers. expects username and password.\"}";
             }
             
             // 2 - Generate a new user
-            User newUser = await _userService.GenerateNewUser();
+            User newUser = await _userService.GenerateNewUser(username, password);
+            if (newUser == null)
+            {
+                HttpContext.Response.StatusCode = 409;
+                return "{\"error\": \"username taken?\"}";
+            }
 
             // 3 - Send request details + user info back to the client
             HttpContext.Response.StatusCode = 201;

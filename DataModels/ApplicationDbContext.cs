@@ -16,7 +16,9 @@ namespace MockStockBackend.DataModels
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
-            
+            builder.Entity<LeagueUser>().HasKey(table => new {
+                table.UserId, table.LeagueId
+            });
         }
         
     }

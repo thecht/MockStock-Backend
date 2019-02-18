@@ -47,7 +47,7 @@ namespace MockStockBackend.DataModels
         // Column Attributes
         public int UserId { get; set; }
         public string LeagueId { get; set; }
-        public bool Owner { get; set; }
+        public int PrivilegeLevel { get; set; }
 
         // Navigation Properties
         [ForeignKey("UserId")]

@@ -30,8 +30,16 @@ namespace MockStockBackend
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+
+            // Database Connection Services
             services.AddEntityFrameworkNpgsql().AddDbContext<ApplicationDbContext>(opt =>
                 opt.UseNpgsql(Configuration.GetConnectionString("PostgreSQLConnectionString")));
+            // services.AddEntityFrameworkMySql().AddDbContext<ApplicationDbContext>(opt =>
+            //     opt.UseMySql(Configuration.GetConnectionString("MySQLConnectionString")));
+            // services.AddEntityFrameworkSqlServer().AddDbContext<ApplicationDbContext>(opt =>
+            //     opt.UseSqlServer(Configuration.GetConnectionString("SqlServerConnectionString")));
+
+            // Business Logic Services
             services.AddScoped<LeagueService>();
             services.AddScoped<UserService>();
         }

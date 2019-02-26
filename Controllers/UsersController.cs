@@ -2,12 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MockStockBackend.DataModels;
 using MockStockBackend.Services;
 
 namespace MockStockBackend.Controllers
 {
+    [Authorize]
     [Route("api/users")]
     [ApiController]
     public class UsersController : ControllerBase
@@ -18,6 +20,7 @@ namespace MockStockBackend.Controllers
             _userService = userService;
         }
 
+        [AllowAnonymous]
         [HttpPost]
         public async Task<string> CreateUser()
         {
@@ -41,6 +44,18 @@ namespace MockStockBackend.Controllers
             // 3 - Send request details + user info back to the client
             HttpContext.Response.StatusCode = 201;
             return Newtonsoft.Json.JsonConvert.SerializeObject(newUser);
+        }
+
+        [AllowAnonymous]
+        [HttpPost("auth")]
+        public IActionResult Authenticate([FromBody]User userParam)
+        {
+            var user = _userService.Authenticate(userParam.UserName, userParam.UserPassword);
+
+            if(user == null)
+                return BadRequest(new { message = "Username or password is incorrect." } );
+            
+            return Ok(user);
         }
     }
 }

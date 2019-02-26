@@ -23,6 +23,7 @@ namespace MockStockBackend.DataModels
         public string UserName { get; set; }
         public string UserPassword { get; set; }
         public decimal UserCurrency { get; set; }
+        public string Token { get; set; }
 
         // FK Collections
         public ICollection<Stock> Stocks { get; set; } = new List<Stock>();

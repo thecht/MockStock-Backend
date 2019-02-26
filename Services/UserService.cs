@@ -6,17 +6,21 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using MockStockBackend.DataModels;
+using MockStockBackend.Helpers;
 
 namespace MockStockBackend.Services
 {
     public class UserService
     {
         private readonly ApplicationDbContext _context;
-        public UserService(ApplicationDbContext context)
+        private readonly AppSettings _appSettings;
+        public UserService(ApplicationDbContext context, IOptions<AppSettings> appSettings)
         {
             _context = context;
+            _appSettings = appSettings.Value;
         }
 
         public async Task<User> GenerateNewUser(string username, string password)
@@ -58,7 +62,7 @@ namespace MockStockBackend.Services
 
             // generate jwt token
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes("_appSettings.Secret");
+            var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new Claim[] 
@@ -71,6 +75,7 @@ namespace MockStockBackend.Services
             var token = tokenHandler.CreateToken(tokenDescriptor);
             user.Token = tokenHandler.WriteToken(token);
 
+            // remove password before returning
             user.UserPassword = null;
 
             return user;

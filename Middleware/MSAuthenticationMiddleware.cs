@@ -16,7 +16,7 @@ namespace MockStockBackend.Middleware
         public async Task InvokeAsync(HttpContext context)
         {
             // Implement authentication logic here
-            Console.WriteLine("Write Authentication Middleware Here!");
+            //Console.WriteLine("Write Authentication Middleware Here!");
             
             // Call the next pipeline item
             await _next(context);

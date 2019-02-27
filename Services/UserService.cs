@@ -67,7 +67,7 @@ namespace MockStockBackend.Services
             {
                 Subject = new ClaimsIdentity(new Claim[] 
                 {
-                    new Claim(ClaimTypes.Name, user.UserName)
+                    new Claim(ClaimTypes.Name, user.UserId.ToString())
                 }),
                 Expires = DateTime.UtcNow.AddDays(7),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
@@ -78,6 +78,12 @@ namespace MockStockBackend.Services
             // remove password before returning
             user.UserPassword = null;
 
+            return user;
+        }
+
+        public User GetUser(int userId)
+        {
+            var user = _context.Users.SingleOrDefault(x => x.UserId == userId);
             return user;
         }
 

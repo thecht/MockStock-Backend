@@ -48,7 +48,7 @@ namespace MockStockBackend.Controllers
         }
 
         [AllowAnonymous]
-        [HttpPost("auth")]
+        [HttpPost("token")]
         public IActionResult Authenticate([FromBody]User userParam)
         {
             var user = _userService.Authenticate(userParam.UserName, userParam.UserPassword);
@@ -62,8 +62,9 @@ namespace MockStockBackend.Controllers
         [HttpGet]
         public IActionResult GetUser()
         {
-            var username = HttpContext.User.FindFirst(ClaimTypes.Name).Value;
-            return Ok(username);
+            var userId = Int32.Parse(HttpContext.User.FindFirst(ClaimTypes.Name).Value);
+            var user = _userService.GetUser(userId);
+            return Ok(user);
         }
     }
 }

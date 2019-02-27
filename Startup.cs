@@ -50,7 +50,6 @@ namespace MockStockBackend
 
             // configure jwt authentication
             var appSettings = appSettingsSection.Get<AppSettings>();
-            Console.WriteLine(appSettings.Secret);
             var key = Encoding.ASCII.GetBytes(appSettings.Secret);
             services.AddAuthentication(x =>
             {
@@ -63,8 +62,8 @@ namespace MockStockBackend
                 {
                     OnTokenValidated = context =>
                     {
-                        var username = context.Principal.Identity.Name;
-                        context.HttpContext.Items["username"] = username;
+                        var userId = Int32.Parse(context.Principal.Identity.Name);
+                        context.HttpContext.Items["userId"] = userId;
                         return Task.CompletedTask;
                     }
                 };

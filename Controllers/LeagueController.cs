@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +9,7 @@ using MockStockBackend.Services;
 namespace MockStockBackend.Controllers
 {
     [Authorize]
-    [Route("api/league")]
+    [Route("api/leagues")]
     [ApiController]
     public class LeagueController: ControllerBase
     {

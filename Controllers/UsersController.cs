@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -56,6 +57,13 @@ namespace MockStockBackend.Controllers
                 return BadRequest(new { message = "Username or password is incorrect." } );
             
             return Ok(user);
+        }
+
+        [HttpGet]
+        public IActionResult GetUser()
+        {
+            var username = HttpContext.User.FindFirst(ClaimTypes.Name).Value;
+            return Ok(username);
         }
     }
 }

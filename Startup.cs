@@ -47,6 +47,7 @@ namespace MockStockBackend
             services.Configure<AppSettings>(appSettingsSection);
             services.AddScoped<LeagueService>();
             services.AddScoped<UserService>();
+            services.AddScoped<TransactionService>();
 
             // configure jwt authentication
             var appSettings = appSettingsSection.Get<AppSettings>();

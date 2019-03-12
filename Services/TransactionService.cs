@@ -66,6 +66,42 @@ namespace MockStockBackend.Services
             return addedTransaction;
 
         }
+
+        public async Task<Stock> AddStock(String symbol, String amount){
+            //Check to see if stock is in the database already for the user
+            //If so then update the amount instead of creating a new entry
+            Stock result = _context.Stocks.Find("aapl");
+
+            if(result == null || result.UserId != 1){
+                //Generate the new stock entry
+                Stock stock = new Stock();
+                stock.UserId = 1;
+                stock.StockId = symbol;
+                stock.StockQuantity = Convert.ToInt32(amount);
+
+                var dbResponse = _context.Stocks.Add(stock);
+                var addedStock = dbResponse.Entity;
+
+                //Add the stock to the database
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine(e);
+                    addedStock = null;
+                }
+
+                return addedStock;
+            }
+
+            //Update stock entry found
+            result.StockQuantity += Convert.ToInt32(amount);
+            await _context.SaveChangesAsync();
+
+            return result;
+        }
     }
 
 }

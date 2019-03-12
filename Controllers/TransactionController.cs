@@ -64,6 +64,9 @@ namespace MockStockBackend.Controllers
             //Generate the transaction details
             Transaction newTransaction = await _transactionService.GenerateTransaction(symbol, amount, price);
 
+            //Add or update stock object in database
+            Stock stock = await _transactionService.AddStock(symbol, amount);
+
             //Send information to the client
             HttpContext.Response.StatusCode = 201;
             return Newtonsoft.Json.JsonConvert.SerializeObject(newTransaction);
@@ -72,21 +75,26 @@ namespace MockStockBackend.Controllers
         [HttpPost("sell")]
         public async Task<string> SellStock()
         {
+            //Get stock symbol and amount to sell
             var symbol = (string)HttpContext.Request.Headers["symbol"];
             var amount = (string)HttpContext.Request.Headers["amount"];
             var price = await _transactionService.PriceQuery(symbol, httpClient);
+            //Check for valid symbol
             if(price == null){
                 return "{\"error\": \"incorrect stock symbol\"}";
             }
             int value;
+            //Check for numeric amount
             if(!int.TryParse(amount, out value)){
                 return "{\"error\": \"amount is not numeric\"}";
             }
+            //Cehck for non-negative amount
             else if(Convert.ToInt32(amount) <= 0){
                 return "{\"error\": \"insufficient amount\"}";
             }
             
-            Transaction transaction = new Transaction();
+            //Generate transaction
+            Transaction newTransaction = new Transaction();
             return null;
         }
     }

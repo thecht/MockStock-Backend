@@ -38,15 +38,26 @@ namespace MockStockBackend.Services
             }
         }
 
-        public async Task<Transaction> GenerateTransaction(string symbol, string amount, string price){
+        public async Task<Transaction> GenerateTransaction(string symbol, string amount, string price, int userID, string type){
             //Create the new transaction
             Transaction transaction = new Transaction();
-            transaction.UserId = 1;
+            transaction.UserId = userID;
             transaction.StockId = symbol;
             transaction.StockQty = Convert.ToInt32(amount);
             transaction.StockPrice = Convert.ToDecimal(price);
-            transaction.TransactionDate = 0;
-            transaction.TransactionType = "buy";
+            transaction.TransactionDate = Convert.ToInt32(DateTime.Now.ToString("yyyyMMdd"));
+            transaction.TransactionType = type;
+
+            //Find the user and deduct from or add to their currency
+            var user = _context.Users.Find(userID);
+            if(type == "buy"){
+                user.UserCurrency -= (Convert.ToDecimal(amount) * Convert.ToDecimal(price));
+                await _context.SaveChangesAsync();
+            }
+            else{
+                user.UserCurrency += (Convert.ToDecimal(amount) * Convert.ToDecimal(price));
+                await _context.SaveChangesAsync();
+            }
 
             //Add transaction to the entity model
             var dbResponse = _context.Transactions.Add(transaction);
@@ -64,18 +75,17 @@ namespace MockStockBackend.Services
             }
 
             return addedTransaction;
-
         }
 
-        public async Task<Stock> AddStock(String symbol, String amount){
+        public async Task<Stock> AddStock(String symbol, String amount, int userId){
             //Check to see if stock is in the database already for the user
             //If so then update the amount instead of creating a new entry
-            Stock result = _context.Stocks.Find("aapl");
+            var result = _context.Stocks.Find(symbol, userId);
 
-            if(result == null || result.UserId != 1){
+            if(result == null){
                 //Generate the new stock entry
                 Stock stock = new Stock();
-                stock.UserId = 1;
+                stock.UserId = userId;
                 stock.StockId = symbol;
                 stock.StockQuantity = Convert.ToInt32(amount);
 
@@ -98,6 +108,25 @@ namespace MockStockBackend.Services
 
             //Update stock entry found
             result.StockQuantity += Convert.ToInt32(amount);
+            await _context.SaveChangesAsync();
+
+            return result;
+        }
+
+        public async Task<Stock> SubtractStock(String symbol, String amount, int userId){
+            //Check for how much of the stock the user owns
+            //frontend will make sure user does not enter more stocks than they own
+            var result = _context.Stocks.Find(symbol, userId);
+
+            //Update stock entry found
+            result.StockQuantity -= Convert.ToInt32(amount);
+            //If amount drops to zero, drop it from the user's inventory
+            if(result.StockQuantity == 0){
+                var dbResponse = _context.Remove(result);
+                var removedStock = dbResponse.Entity;
+                await _context.SaveChangesAsync();
+                return removedStock;
+            }
             await _context.SaveChangesAsync();
 
             return result;

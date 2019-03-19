@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Newtonsoft.Json;
 
 namespace MockStockBackend.DataModels
 {
@@ -13,6 +14,7 @@ namespace MockStockBackend.DataModels
         
         // Navigation Properties
         [ForeignKey("UserId")]
+        [JsonIgnore]
         public User User { get; set; }
     }
 
@@ -68,6 +70,7 @@ namespace MockStockBackend.DataModels
 
         // Navigation Properties
         [ForeignKey("UserId")]
+        [JsonIgnore]
         public User User { get; set; }
     }
 

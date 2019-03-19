@@ -17,9 +17,14 @@ namespace MockStockBackend.DataModels
             builder.Entity<LeagueUser>().HasKey(table => new {
                 table.UserId, table.LeagueId
             });
+
             builder.Entity<User>()
                 .HasIndex(table => table.UserName)
                 .IsUnique();
+                
+            builder.Entity<Stock>().HasKey(table => new {
+                table.StockId, table.UserId
+            });
         }
         
     }

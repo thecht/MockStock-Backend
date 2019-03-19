@@ -39,10 +39,11 @@ namespace MockStockBackend.Controllers
             return price;
         }
 
-        [AllowAnonymous]
         [HttpPost("buy")]
         public async Task<string> BuyStock()
         {
+            //Authenticate the user
+            var userId = Int32.Parse(HttpContext.User.FindFirst(ClaimTypes.Name).Value);
             //Get the stock symbol and amount to purchase
             var symbol = (string)HttpContext.Request.Headers["symbol"];
             var amount = (string)HttpContext.Request.Headers["amount"];
@@ -62,10 +63,10 @@ namespace MockStockBackend.Controllers
             }
             
             //Generate the transaction details
-            Transaction newTransaction = await _transactionService.GenerateTransaction(symbol, amount, price);
+            Transaction newTransaction = await _transactionService.GenerateTransaction(symbol, amount, price, userId, "buy");
 
             //Add or update stock object in database
-            Stock stock = await _transactionService.AddStock(symbol, amount);
+            Stock stock = await _transactionService.AddStock(symbol, amount, userId);
 
             //Send information to the client
             HttpContext.Response.StatusCode = 201;
@@ -75,6 +76,8 @@ namespace MockStockBackend.Controllers
         [HttpPost("sell")]
         public async Task<string> SellStock()
         {
+            //Verify the user
+            var userId = Int32.Parse(HttpContext.User.FindFirst(ClaimTypes.Name).Value);
             //Get stock symbol and amount to sell
             var symbol = (string)HttpContext.Request.Headers["symbol"];
             var amount = (string)HttpContext.Request.Headers["amount"];
@@ -94,8 +97,14 @@ namespace MockStockBackend.Controllers
             }
             
             //Generate transaction
-            Transaction newTransaction = new Transaction();
-            return null;
+            Transaction newTransaction = await _transactionService.GenerateTransaction(symbol, amount, price, userId, "sell");
+
+            //Update stock in database
+            Stock stock = await _transactionService.SubtractStock(symbol, amount, userId);
+
+            //Send Information to the client
+            HttpContext.Response.StatusCode = 201;
+            return Newtonsoft.Json.JsonConvert.SerializeObject(newTransaction);
         }
     }
 

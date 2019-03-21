@@ -12,16 +12,16 @@ using MockStockBackend.Services;
 namespace MockStockBackend.Controllers
 {
     [Authorize]
-    [Route("api/transaction")]
+    [Route("api/stock")]
     [ApiController]
 
-    public class TransactionController: ControllerBase
+    public class StockController: ControllerBase
     {
-        private readonly TransactionService _transactionService;
+        private readonly StockService _stockService;
         private readonly HttpClient httpClient;
-        public TransactionController(TransactionService transactionService)
+        public StockController(StockService stockService)
         {
-            _transactionService = transactionService;
+            _stockService = stockService;
             httpClient = new HttpClient();
             httpClient.BaseAddress = new Uri("https://api.iextrading.com/1.0/");
         }
@@ -32,7 +32,7 @@ namespace MockStockBackend.Controllers
         {
             //Search for the stock price with the symbol given
             var symbol = (string)HttpContext.Request.Headers["symbol"];
-            string price = await _transactionService.PriceQuery(symbol, httpClient);
+            string price = await _stockService.PriceQuery(symbol, httpClient);
             if(price == null){
                 return "{\"error\": \"incorrect stock symbol\"}";
             }
@@ -47,7 +47,7 @@ namespace MockStockBackend.Controllers
             //Get the stock symbol and amount to purchase
             var symbol = (string)HttpContext.Request.Headers["symbol"];
             var amount = (string)HttpContext.Request.Headers["amount"];
-            var price = await _transactionService.PriceQuery(symbol, httpClient);
+            var price = await _stockService.PriceQuery(symbol, httpClient);
             //Make sure stock symbol exists
             if(price == null){
                 return "{\"error\": \"incorrect stock symbol\"}";
@@ -63,10 +63,10 @@ namespace MockStockBackend.Controllers
             }
             
             //Generate the transaction details
-            Transaction newTransaction = await _transactionService.GenerateTransaction(symbol, amount, price, userId, "buy");
+            Transaction newTransaction = await _stockService.GenerateTransaction(symbol, amount, price, userId, "buy");
 
             //Add or update stock object in database
-            Stock stock = await _transactionService.AddStock(symbol, amount, userId);
+            Stock stock = await _stockService.AddStock(symbol, amount, userId);
 
             //Send information to the client
             HttpContext.Response.StatusCode = 201;
@@ -81,7 +81,7 @@ namespace MockStockBackend.Controllers
             //Get stock symbol and amount to sell
             var symbol = (string)HttpContext.Request.Headers["symbol"];
             var amount = (string)HttpContext.Request.Headers["amount"];
-            var price = await _transactionService.PriceQuery(symbol, httpClient);
+            var price = await _stockService.PriceQuery(symbol, httpClient);
             //Check for valid symbol
             if(price == null){
                 return "{\"error\": \"incorrect stock symbol\"}";
@@ -97,10 +97,10 @@ namespace MockStockBackend.Controllers
             }
             
             //Generate transaction
-            Transaction newTransaction = await _transactionService.GenerateTransaction(symbol, amount, price, userId, "sell");
+            Transaction newTransaction = await _stockService.GenerateTransaction(symbol, amount, price, userId, "sell");
 
             //Update stock in database
-            Stock stock = await _transactionService.SubtractStock(symbol, amount, userId);
+            Stock stock = await _stockService.SubtractStock(symbol, amount, userId);
 
             //Send Information to the client
             HttpContext.Response.StatusCode = 201;

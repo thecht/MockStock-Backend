@@ -16,12 +16,12 @@ using MockStockBackend.Helpers;
 
 namespace MockStockBackend.Services
 {
-    public class TransactionService
+    public class StockService
     {
         private readonly ApplicationDbContext _context;
         private readonly AppSettings _appSettings;
 
-        public TransactionService(ApplicationDbContext context, IOptions<AppSettings> appSettings)
+        public StockService(ApplicationDbContext context, IOptions<AppSettings> appSettings)
         {
             _context = context;
             _appSettings = appSettings.Value;

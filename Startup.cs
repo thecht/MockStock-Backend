@@ -34,14 +34,24 @@ namespace MockStockBackend
         {
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
-            // Database Connection Services
-            services.AddEntityFrameworkNpgsql().AddDbContext<ApplicationDbContext>(opt =>
+            // Set database provider
+            if(Environment.GetEnvironmentVariable("ASPNET_ENVIRONMENT") == "PRODUCTION")
+            {
+                services.AddEntityFrameworkSqlServer().AddDbContext<ApplicationDbContext>(opt =>
+                opt.UseSqlServer(Configuration.GetConnectionString("SqlServerConnectionString")));
+            } 
+            else
+            {
+                services.AddEntityFrameworkNpgsql().AddDbContext<ApplicationDbContext>(opt =>
                 opt.UseNpgsql(Configuration.GetConnectionString("PostgreSQLConnectionString")));
+            }
+            services.BuildServiceProvider().GetService<ApplicationDbContext>().Database.Migrate();
+
+            // services.AddEntityFrameworkNpgsql().AddDbContext<ApplicationDbContext>(opt =>
+            //     opt.UseNpgsql(Configuration.GetConnectionString("PostgreSQLConnectionString")));
             // services.AddEntityFrameworkMySql().AddDbContext<ApplicationDbContext>(opt =>
             //     opt.UseMySql(Configuration.GetConnectionString("MySQLConnectionString")));
-            // services.AddEntityFrameworkSqlServer().AddDbContext<ApplicationDbContext>(opt =>
-            //     opt.UseSqlServer(Configuration.GetConnectionString("SqlServerConnectionString")));
-
+            
             // Business Logic Services
             var appSettingsSection = Configuration.GetSection("AppSettings");
             services.Configure<AppSettings>(appSettingsSection);

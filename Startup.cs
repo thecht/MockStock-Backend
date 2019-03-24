@@ -35,17 +35,12 @@ namespace MockStockBackend
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
             // Set database provider
+            services.AddEntityFrameworkNpgsql().AddDbContext<ApplicationDbContext>(opt =>
+                opt.UseNpgsql(Configuration.GetConnectionString("PostgreSQLConnectionString")));
             if(Environment.GetEnvironmentVariable("ASPNET_ENVIRONMENT") == "PRODUCTION")
             {
-                services.AddEntityFrameworkSqlServer().AddDbContext<ApplicationDbContext>(opt =>
-                opt.UseSqlServer(Configuration.GetConnectionString("SqlServerConnectionString")));
-            } 
-            else
-            {
-                services.AddEntityFrameworkNpgsql().AddDbContext<ApplicationDbContext>(opt =>
-                opt.UseNpgsql(Configuration.GetConnectionString("PostgreSQLConnectionString")));
+                services.BuildServiceProvider().GetService<ApplicationDbContext>().Database.Migrate();
             }
-            services.BuildServiceProvider().GetService<ApplicationDbContext>().Database.Migrate();
 
             // services.AddEntityFrameworkNpgsql().AddDbContext<ApplicationDbContext>(opt =>
             //     opt.UseNpgsql(Configuration.GetConnectionString("PostgreSQLConnectionString")));

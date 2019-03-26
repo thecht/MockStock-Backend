@@ -49,10 +49,12 @@ namespace MockStockBackend.Controllers
 
         [AllowAnonymous]
         [HttpPost("token")]
-        public IActionResult Authenticate([FromBody]User userParam)
+        public IActionResult Authenticate()
         {
-            var user = _userService.Authenticate(userParam.UserName, userParam.UserPassword);
-
+            var username = (string)HttpContext.Request.Headers["username"];
+            var password = (string)HttpContext.Request.Headers["password"];
+            var user = _userService.Authenticate(username, password);
+            
             if(user == null)
                 return BadRequest(new { message = "Username or password is incorrect." } );
             

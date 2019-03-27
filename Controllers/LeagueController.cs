@@ -65,5 +65,30 @@ namespace MockStockBackend.Controllers
             bool result = await _leagueService.leaveLeague(leagueID, userID);
             return Newtonsoft.Json.JsonConvert.SerializeObject(result);
         }
+
+        [HttpDelete("kick/{leagueId}/{kickedUserID}")]
+        public async Task<string> kickFromLeague(string leagueID, int kickedUserID)
+        {
+            var userID = Int32.Parse(HttpContext.User.FindFirst(ClaimTypes.Name).Value);
+            bool result = await _leagueService.kickFromLeague(leagueID, userID, kickedUserID);
+            return Newtonsoft.Json.JsonConvert.SerializeObject(result);
+        }
+
+        [HttpGet]
+        public async Task<string> GetLeaguesForUser()
+        {
+            var userID = Int32.Parse(HttpContext.User.FindFirst(ClaimTypes.Name).Value);
+            var leagues = await _leagueService.GetLeaguesForUser(userID);
+            return Newtonsoft.Json.JsonConvert.SerializeObject(leagues);
+        }
+
+        /*[HttpGet("leaderboard")]
+        public async Task<string> viewLeaderboard()
+        {
+            // Retrieve userID from token, and check to see if they belong to league before showing leaderboard.
+            var leagueId = (string)HttpContext.Request.Headers["leagueID"];
+            var users = await _leagueService.viewLeaderboard(leagueId);
+            return Newtonsoft.Json.JsonConvert.SerializeObject(users);
+        }*/
     }
 }

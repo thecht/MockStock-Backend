@@ -205,5 +205,72 @@ namespace MockStockBackend.Services
 
             return response;
         }
+
+        public async Task<bool> kickFromLeague(string leagueID, int userID, int kickedUserID)
+        {
+            bool response = false;
+
+            LeagueUser result = (from leagueUser in _context.LeagueUsers
+                                join league in _context.Leagues
+                                on leagueUser.LeagueId equals league.LeagueId
+                                where leagueUser.LeagueId == leagueID && leagueUser.UserId == kickedUserID && league.LeagueHost == userID
+                                select new LeagueUser
+                                {
+                                    UserId = leagueUser.UserId,
+                                    LeagueId = leagueUser.LeagueId
+                                }).SingleOrDefault();
+
+            try
+            {
+                _context.LeagueUsers.Remove(result);
+                await _context.SaveChangesAsync();
+                response = true;
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e);
+            }
+
+            return response;
+        }
+
+        public async Task<List<League>> GetLeaguesForUser(int userId)
+        {
+            var res =   from leagueUsers in _context.LeagueUsers
+                        join league in _context.Leagues
+                        on leagueUsers.LeagueId equals league.LeagueId
+                        where leagueUsers.UserId == userId
+                        select new League
+                        {
+                            LeagueId = league.LeagueId,
+                            LeagueName = league.LeagueName,
+                            LeagueHost = league.LeagueHost,
+                            LeagueCreationDate = league.LeagueCreationDate
+                            //OpenEnrollment = league.OpenEnrollment,
+                            //LeagueUsers = league.LeagueUsers
+                        };
+            var leagues = await res.ToListAsync();
+            return leagues;
+        }
+
+        /*public async Task<List<User>> viewLeaderboard(string leagueID)
+        {
+            // Get user ids from the league
+            var res = from leagueUsers in _context.LeagueUsers
+            join user in _context.Users on leagueUsers.UserId equals user.UserId
+            where leagueUsers.LeagueId == leagueID && leagueUsers.UserId == user.UserId
+            orderby user.UserCurrency
+            select leagueUsers.UserId;
+
+            var userIds = await res.ToArrayAsync();
+
+            // Get user objects using the userIds
+            var users = await _context.Users
+                        .Where(x => userIds.Contains(x.UserId))
+                        .Include(x => x.Stocks)
+                        .ToListAsync();
+            
+            return users;
+        }*/
     }
 }

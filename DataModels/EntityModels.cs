@@ -37,9 +37,13 @@ namespace MockStockBackend.DataModels
     {
         // Column Attributes
         public string LeagueId { get; set; }
+        public int LeagueHost { get; set; }
+        public string LeagueName { get; set; }
+        public string LeagueCreationDate { get; set; }
         public bool OpenEnrollment { get; set; }
 
         // FK Collections
+        [JsonIgnore]
         public ICollection<LeagueUser> LeagueUsers { get; set; } = new List<LeagueUser>();
     }
 

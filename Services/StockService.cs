@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
@@ -13,6 +14,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using MockStockBackend.DataModels;
 using MockStockBackend.Helpers;
+using Newtonsoft.Json.Linq;
 
 namespace MockStockBackend.Services
 {
@@ -52,11 +54,9 @@ namespace MockStockBackend.Services
             var user = _context.Users.Find(userID);
             if(type == "buy"){
                 user.UserCurrency -= (Convert.ToDecimal(amount) * Convert.ToDecimal(price));
-                await _context.SaveChangesAsync();
             }
             else{
                 user.UserCurrency += (Convert.ToDecimal(amount) * Convert.ToDecimal(price));
-                await _context.SaveChangesAsync();
             }
 
             //Add transaction to the entity model
@@ -130,6 +130,133 @@ namespace MockStockBackend.Services
             await _context.SaveChangesAsync();
 
             return result;
+        }
+
+
+        /*
+        Data Fetching
+        */
+
+
+        public async Task<String> FetchDetails(String symbol, HttpClient httpClient){
+            //Query the API for key details about a certain stock
+            try{
+            string price = await PriceQuery(symbol, httpClient);
+
+            var responseBody = await httpClient.GetStringAsync("stock/" + symbol + "/stats");
+            var results = JObject.Parse(responseBody);
+
+            string fiveDayChange = (string) results["day5ChangePercent"];
+            string high = (string) results["week52high"];
+            string low = (string) results["week52low"];
+            string yearChange = (string) results["ytdChangePercent"];
+
+            var details = new Dictionary<string, string>();
+                details.Add("price", price);
+                details.Add("day5ChangePercent", fiveDayChange);
+                details.Add("week52high", high);
+                details.Add("week52low", low);
+                details.Add("ytdChangePercent", yearChange);
+            string batch = Newtonsoft.Json.JsonConvert.SerializeObject(details);
+            return batch;
+
+            }catch(Exception){
+                return null;
+            }
+        }
+
+        public async Task<String> FetchMarket(HttpClient httpClient){
+            //Get the entire list of stock symbols and only grab the first 100
+            var referenceData = await httpClient.GetStringAsync("ref-data/symbols");
+            JArray results = JArray.Parse(referenceData);
+            string[] symbols = new string[100];
+            for(int i = 0; i < 100; i++){
+                symbols[i] = (string) results.ElementAt(i)["symbol"];
+            }
+            var info = await httpClient.GetStringAsync("stock/market/batch?symbols=" + string.Join(",", symbols) + 
+                "&types=price,logo,previous");
+
+            //Get only the changePercent from "previous"
+            var list = JObject.Parse(info);
+            string batch = "{\"market\":{\"";
+            for(int i = 0; i < symbols.Count(); i++){
+                if(i != 0){
+                    batch += ",\"";
+                }
+                batch += symbols[i] + "\":{\"logo\":\"" + (string) list[symbols.ElementAt(i)]["logo"]["url"] +
+                    "\",\"price\":" + (string) list[symbols.ElementAt(i)]["price"] + 
+                    ",\"changePercent\":" + (string) list[symbols.ElementAt(i)]["previous"]["changePercent"] + "}";
+            }
+            batch += "},";
+
+            //Get today's biggest gainers and losers
+            var gainers = await httpClient.GetStringAsync("stock/market/list/gainers");
+            batch += "\"gainers\":" + gainers + ",";
+            var losers = await httpClient.GetStringAsync("stock/market/list/losers");
+            batch += "\"losers\":" + losers;
+
+            return batch += "}";
+        }
+
+        public async Task<String> FetchChart(String symbol, String range, HttpClient httpClient){
+            try{
+                var responseBody = await httpClient.GetStringAsync("stock/" + symbol + "/chart/" + range);
+                return responseBody;
+            }
+            catch(Exception e){
+                Debug.WriteLine(e);
+                return null;
+            }
+        }
+
+        public async Task<String> FetchBatch(String stocks, HttpClient httpClient){
+            //Check if the batch request is over 100
+            //split it up into chunks if it is
+            string batch = "{\"";
+            List<string> symbols = stocks.Split(",").ToList();
+
+            if(symbols.Count() > 100){
+                int lists = (symbols.Count() / 100) + 1;
+                //For every 100 symbols, do a separate API request
+                for(int i = 1; i <= lists; i++){
+                    //Check if it's the last iteration of the batch
+                    //If so then a limit must be placed on the "GetRange" function
+                    int max;
+                    if(i != lists){
+                        max=100;
+                    }else{
+                        max=(symbols.Count() - (i*100-100));
+                    }
+                    string responseBody = await httpClient.GetStringAsync("stock/market/batch?symbols=" + String.Join(",", symbols.GetRange(i*100-100, max)) +
+                            "&types=price,previous");
+                    //Get only changePercent from "previous" and return that with stock symbol and price
+                    var tempList = JObject.Parse(responseBody);
+                    for(int j = 0; j < max; j++){
+                        if(j != 0 || i != 1){
+                            batch += ",\"";
+                        }
+                        batch += symbols.ElementAt(j+(i*100-100)) + "\":{\"price\":" + (string)tempList[symbols.ElementAt(j+(i*100-100))]["price"] + ",\"changePercent\":" + 
+                        (string)tempList[symbols.ElementAt(j+(i*100-100))]["previous"]["changePercent"] + "}";
+                    }                 
+                }
+                batch += "}";
+                return batch; 
+            }
+
+            //When request is 100 or less stocks
+            var results = await httpClient.GetStringAsync("stock/market/batch?symbols=" + stocks + "&types=price,previous");
+            //Get only changePercent from "previous" data field and return that with stock symbol and price
+            var list = JObject.Parse(results);
+            for(int i = 0; i < symbols.Count(); i++){
+                if(i != 0){
+                    batch += ",\"";
+                }
+                batch += symbols.ElementAt(i) + "\":{\"price\":" + (string)list[symbols.ElementAt(i)]["price"] + ",\"changePercent\":" + 
+                (string)list[symbols.ElementAt(i)]["previous"]["changePercent"] + "}";
+            }
+
+            batch += "}";
+            return batch;
         }
     }
 

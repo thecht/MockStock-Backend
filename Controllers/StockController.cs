@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Security.Claims;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MockStockBackend.DataModels;
 using MockStockBackend.Services;
+using Newtonsoft.Json.Linq;
 
 namespace MockStockBackend.Controllers
 {
@@ -65,9 +67,6 @@ namespace MockStockBackend.Controllers
             //Generate the transaction details
             Transaction newTransaction = await _stockService.GenerateTransaction(symbol, amount, price, userId, "buy");
 
-            //Add or update stock object in database
-            Stock stock = await _stockService.AddStock(symbol, amount, userId);
-
             //Send information to the client
             HttpContext.Response.StatusCode = 201;
             return Newtonsoft.Json.JsonConvert.SerializeObject(newTransaction);
@@ -99,12 +98,60 @@ namespace MockStockBackend.Controllers
             //Generate transaction
             Transaction newTransaction = await _stockService.GenerateTransaction(symbol, amount, price, userId, "sell");
 
-            //Update stock in database
-            Stock stock = await _stockService.SubtractStock(symbol, amount, userId);
-
             //Send Information to the client
-            HttpContext.Response.StatusCode = 201;
             return Newtonsoft.Json.JsonConvert.SerializeObject(newTransaction);
+        }
+
+        //Data Fetching
+        
+        [AllowAnonymous]
+        [HttpGet("details")]
+        public async Task<string> getDetails(){
+            string symbol = (string)HttpContext.Request.Headers["symbol"];
+
+            var details = await _stockService.FetchDetails(symbol, httpClient);
+
+            if(details == null){
+                return "Please enter a valid ticker symbol.";
+            }
+
+            return details;
+        }
+
+        [AllowAnonymous]
+        [HttpGet("marketplace")]
+        public async Task<String> getMarket(){
+
+            //Fetch the batch data needed for the marketplace
+            var market = await _stockService.FetchMarket(httpClient);
+            
+            return market;
+        }
+
+        [AllowAnonymous]
+        [HttpGet("chart")]
+        public async Task<string> getChart(){
+            string symbol = (string)HttpContext.Request.Headers["symbol"];
+            string range = (string)HttpContext.Request.Headers["range"];
+
+            var chart = await _stockService.FetchChart(symbol, range, httpClient);
+
+            return chart;
+        }
+
+        [AllowAnonymous]
+        [HttpGet("Batch")]
+        public async Task<String> getBatch(){
+            //Get the list of symbols needed for the batch request
+            String symbols;
+            using(StreamReader reader = new System.IO.StreamReader(HttpContext.Request.Body)){
+            symbols = reader.ReadToEnd();
+            }   
+
+            //Return the price and percent change of each symbol
+            var batch = await _stockService.FetchBatch(symbols, httpClient);
+
+            return batch;
         }
     }
 

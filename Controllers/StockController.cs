@@ -141,17 +141,14 @@ namespace MockStockBackend.Controllers
 
         [AllowAnonymous]
         [HttpGet("Batch")]
-        public async Task<String> getBatch(){
+        public async Task<String> getBatch([FromBody]SymbolContainer symbols){
             //Get the list of symbols needed for the batch request
-            String symbols;
-            using(StreamReader reader = new System.IO.StreamReader(HttpContext.Request.Body)){
-            symbols = reader.ReadToEnd();
-            }   
+            var listOfSymbols = symbols.Symbols;
 
             //Return the price and percent change of each symbol
-            var batch = await _stockService.FetchBatch(symbols, httpClient);
+            var batch = await _stockService.FetchBatch(listOfSymbols, httpClient);
 
-            return batch;
+            return Newtonsoft.Json.JsonConvert.SerializeObject(batch);
         }
     }
 

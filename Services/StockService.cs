@@ -185,53 +185,50 @@ namespace MockStockBackend.Services
             }
         }
 
-        public async Task<String> FetchBatch(String stocks, HttpClient httpClient){
+        public async Task<List<StockBatch>> FetchBatch(List<string> symbols, HttpClient httpClient){
             //Check if the batch request is over 100
             //split it up into chunks if it is
-            string batch = "{\"";
-            List<string> symbols = stocks.Split(",").ToList();
+            List<StockBatch> batch = new List<StockBatch>();
 
             if(symbols.Count() > 100){
-                int lists = (symbols.Count() / 100) + 1;
+                int requests = (symbols.Count() / 100) + 1;
                 //For every 100 symbols, do a separate API request
-                for(int i = 1; i <= lists; i++){
-                    //Check if it's the last iteration of the batch
+                for(int i = 1; i <= requests; i++){
+                    //Check if it's the last request of the batch
                     //If so then a limit must be placed on the "GetRange" function
                     int max;
-                    if(i != lists){
+                    if(i != requests){
                         max=100;
                     }else{
                         max=(symbols.Count() - (i*100-100));
                     }
                     string responseBody = await httpClient.GetStringAsync("stock/market/batch?symbols=" + String.Join(",", symbols.GetRange(i*100-100, max)) +
                             "&types=price,previous");
-                    //Get only changePercent from "previous" and return that with stock symbol and price
+                    //Get only the data needed to return
                     var tempList = JObject.Parse(responseBody);
                     for(int j = 0; j < max; j++){
-                        if(j != 0 || i != 1){
-                            batch += ",\"";
-                        }
-                        batch += symbols.ElementAt(j+(i*100-100)) + "\":{\"price\":" + (string)tempList[symbols.ElementAt(j+(i*100-100))]["price"] + ",\"changePercent\":" + 
-                        (string)tempList[symbols.ElementAt(j+(i*100-100))]["previous"]["changePercent"] + "}";
-                    }                 
+                        StockBatch x = new StockBatch();
+                        x.symbol = symbols.ElementAt(j + (i*100 - 100));
+                        x.price = (decimal)tempList[x.symbol]["price"];
+                        x.changePercent = (decimal)tempList[x.symbol]["previous"]["changePercent"];
+                        batch.Add(x);
+                    }
                 }
-                batch += "}";
-                return batch; 
+                return batch;
             }
 
             //When request is 100 or less stocks
-            var results = await httpClient.GetStringAsync("stock/market/batch?symbols=" + stocks + "&types=price,previous");
-            //Get only changePercent from "previous" data field and return that with stock symbol and price
-            var list = JObject.Parse(results);
+            var response = await httpClient.GetStringAsync("stock/market/batch?symbols=" + string.Join(",", symbols) + "&types=price,previous");
+            //Get only the required data fields and return a list of that
+            var list = JObject.Parse(response);
             for(int i = 0; i < symbols.Count(); i++){
-                if(i != 0){
-                    batch += ",\"";
-                }
-                batch += symbols.ElementAt(i) + "\":{\"price\":" + (string)list[symbols.ElementAt(i)]["price"] + ",\"changePercent\":" + 
-                (string)list[symbols.ElementAt(i)]["previous"]["changePercent"] + "}";
+                StockBatch x = new StockBatch();
+                x.symbol = symbols.ElementAt(i);
+                x.price = (decimal)list[x.symbol]["price"];
+                x.changePercent = (decimal)list[x.symbol]["previous"]["changePercent"];
+                batch.Add(x);
             }
 
-            batch += "}";
             return batch;
         }
     }

@@ -67,9 +67,6 @@ namespace MockStockBackend.Controllers
             //Generate the transaction details
             Transaction newTransaction = await _stockService.GenerateTransaction(symbol, amount, price, userId, "buy");
 
-            //Add or update stock object in database
-            Stock stock = await _stockService.AddStock(symbol, amount, userId);
-
             //Send information to the client
             HttpContext.Response.StatusCode = 201;
             return Newtonsoft.Json.JsonConvert.SerializeObject(newTransaction);
@@ -101,11 +98,7 @@ namespace MockStockBackend.Controllers
             //Generate transaction
             Transaction newTransaction = await _stockService.GenerateTransaction(symbol, amount, price, userId, "sell");
 
-            //Update stock in database
-            Stock stock = await _stockService.SubtractStock(symbol, amount, userId);
-
             //Send Information to the client
-            HttpContext.Response.StatusCode = 201;
             return Newtonsoft.Json.JsonConvert.SerializeObject(newTransaction);
         }
 

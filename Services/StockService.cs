@@ -208,6 +208,9 @@ namespace MockStockBackend.Services
         }
 
         public async Task<List<StockBatch>> FetchBatch(List<string> symbols, HttpClient httpClient){
+            //Capitalize every symbol
+            symbols = symbols.ConvertAll(symbol => symbol.ToUpper());
+            
             //Check if the batch request is over 100
             //split it up into chunks if it is
             List<StockBatch> batch = new List<StockBatch>();

@@ -114,7 +114,7 @@ namespace MockStockBackend.Services
         */
 
 
-        public async Task<String> FetchDetails(String symbol, HttpClient httpClient){
+        public async Task<DetailedStock> FetchDetails(String symbol, HttpClient httpClient){
             //Query the API for key details about a certain stock
             try{
             string price = await PriceQuery(symbol, httpClient);
@@ -122,26 +122,22 @@ namespace MockStockBackend.Services
             var responseBody = await httpClient.GetStringAsync("stock/" + symbol + "/stats");
             var results = JObject.Parse(responseBody);
 
-            string fiveDayChange = (string) results["day5ChangePercent"];
-            string high = (string) results["week52high"];
-            string low = (string) results["week52low"];
-            string yearChange = (string) results["ytdChangePercent"];
+            DetailedStock stock = new DetailedStock();
 
-            var details = new Dictionary<string, string>();
-                details.Add("price", price);
-                details.Add("day5ChangePercent", fiveDayChange);
-                details.Add("week52high", high);
-                details.Add("week52low", low);
-                details.Add("ytdChangePercent", yearChange);
-            string batch = Newtonsoft.Json.JsonConvert.SerializeObject(details);
-            return batch;
+            stock.symbol = symbol;
+            stock.price = Decimal.Parse(price);
+            stock.changePercent = (Decimal) results["day5ChangePercent"];
+            stock.ytdChange = (Decimal) results["ytdChangePercent"];
+            stock.high = (Decimal) results["week52high"];
+            stock.low = (Decimal) results["week52low"];
 
+            return stock;
             }catch(Exception){
                 return null;
             }
         }
 
-        public async Task<String> FetchMarket(HttpClient httpClient){
+        public async Task<MarketBatch> FetchMarket(HttpClient httpClient){
             //Get the entire list of stock symbols and only grab the first 100
             var referenceData = await httpClient.GetStringAsync("ref-data/symbols");
             JArray results = JArray.Parse(referenceData);
@@ -149,35 +145,61 @@ namespace MockStockBackend.Services
             for(int i = 0; i < 100; i++){
                 symbols[i] = (string) results.ElementAt(i)["symbol"];
             }
-            var info = await httpClient.GetStringAsync("stock/market/batch?symbols=" + string.Join(",", symbols) + 
+            var responseBody = await httpClient.GetStringAsync("stock/market/batch?symbols=" + string.Join(",", symbols) + 
                 "&types=price,logo,previous");
+            var market = JObject.Parse(responseBody);
+            MarketBatch marketBatch = new MarketBatch();
 
-            //Get only the changePercent from "previous"
-            var list = JObject.Parse(info);
-            string batch = "{\"market\":{\"";
-            for(int i = 0; i < symbols.Count(); i++){
-                if(i != 0){
-                    batch += ",\"";
-                }
-                batch += symbols[i] + "\":{\"logo\":\"" + (string) list[symbols.ElementAt(i)]["logo"]["url"] +
-                    "\",\"price\":" + (string) list[symbols.ElementAt(i)]["price"] + 
-                    ",\"changePercent\":" + (string) list[symbols.ElementAt(i)]["previous"]["changePercent"] + "}";
+            //Get only the data needed for each stock
+            foreach(string symbol in symbols)
+            {
+                MarketStock x = new MarketStock();
+                x.symbol = symbol;
+                x.logo = (string) market[x.symbol]["logo"]["url"];
+                x.price = (decimal) market[x.symbol]["price"];
+                x.changePercent = (decimal) market[x.symbol]["previous"]["changePercent"];
+                marketBatch.stocks.Add(x);
             }
-            batch += "},";
 
             //Get today's biggest gainers and losers
-            var gainers = await httpClient.GetStringAsync("stock/market/list/gainers");
-            batch += "\"gainers\":" + gainers + ",";
-            var losers = await httpClient.GetStringAsync("stock/market/list/losers");
-            batch += "\"losers\":" + losers;
+            responseBody = await httpClient.GetStringAsync("stock/market/list/gainers");
+            var gainers = JArray.Parse(responseBody);
+            foreach(JToken stock in gainers)
+            {
+                MarketStock x = new MarketStock();
+                x.symbol = (string) stock["symbol"];
+                x.price = (decimal) stock["latestPrice"];
+                x.changePercent = (decimal) stock["changePercent"];
+                marketBatch.gainers.Add(x);
+            }
 
-            return batch += "}";
+            responseBody = await httpClient.GetStringAsync("stock/market/list/losers");
+            var losers = JArray.Parse(responseBody);
+            foreach(JToken stock in losers)
+            {
+                MarketStock x = new MarketStock();
+                x.symbol = (string) stock["symbol"];
+                x.price = (decimal) stock["latestPrice"];
+                x.changePercent = (decimal) stock["changePercent"];
+                marketBatch.losers.Add(x);
+            }
+
+            return marketBatch;
         }
 
-        public async Task<String> FetchChart(String symbol, String range, HttpClient httpClient){
+        public async Task<List<ChartPoint>> FetchChart(String symbol, String range, HttpClient httpClient){
             try{
                 var responseBody = await httpClient.GetStringAsync("stock/" + symbol + "/chart/" + range);
-                return responseBody;
+                var points = JArray.Parse(responseBody);
+                List<ChartPoint> chart = new List<ChartPoint>();
+                foreach(JToken point in points)
+                {
+                    ChartPoint x = new ChartPoint();
+                    x.date = (string) point["date"];
+                    x.closingPrice = (decimal) point["close"];
+                    chart.Add(x);
+                }
+                return chart;
             }
             catch(Exception e){
                 Debug.WriteLine(e);

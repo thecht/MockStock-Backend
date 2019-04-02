@@ -115,7 +115,7 @@ namespace MockStockBackend.Controllers
                 return "Please enter a valid ticker symbol.";
             }
 
-            return details;
+            return Newtonsoft.Json.JsonConvert.SerializeObject(details);
         }
 
         [AllowAnonymous]
@@ -125,18 +125,18 @@ namespace MockStockBackend.Controllers
             //Fetch the batch data needed for the marketplace
             var market = await _stockService.FetchMarket(httpClient);
             
-            return market;
+            return Newtonsoft.Json.JsonConvert.SerializeObject(market);
         }
 
         [AllowAnonymous]
         [HttpGet("chart")]
-        public async Task<string> getChart(){
+        public async Task<String> getChart(){
             string symbol = (string)HttpContext.Request.Headers["symbol"];
             string range = (string)HttpContext.Request.Headers["range"];
 
             var chart = await _stockService.FetchChart(symbol, range, httpClient);
 
-            return chart;
+            return Newtonsoft.Json.JsonConvert.SerializeObject(chart);
         }
 
         [AllowAnonymous]
@@ -144,6 +144,9 @@ namespace MockStockBackend.Controllers
         public async Task<String> getBatch([FromBody]SymbolContainer symbols){
             //Get the list of symbols needed for the batch request
             var listOfSymbols = symbols.Symbols;
+
+            //Capitalize every symbol
+            listOfSymbols = listOfSymbols.ConvertAll(symbol => symbol.ToUpper());
 
             //Return the price and percent change of each symbol
             var batch = await _stockService.FetchBatch(listOfSymbols, httpClient);

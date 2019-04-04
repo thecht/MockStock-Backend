@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
@@ -13,6 +14,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using MockStockBackend.DataModels;
 using MockStockBackend.Helpers;
+using Newtonsoft.Json.Linq;
 
 namespace MockStockBackend.Services
 {
@@ -38,10 +40,10 @@ namespace MockStockBackend.Services
             }
         }
 
-        public async Task<Transaction> GenerateTransaction(string symbol, string amount, string price, int userID, string type){
+        public async Task<Transaction> GenerateTransaction(string symbol, string amount, string price, int userId, string type){
             //Create the new transaction
             Transaction transaction = new Transaction();
-            transaction.UserId = userID;
+            transaction.UserId = userId;
             transaction.StockId = symbol;
             transaction.StockQty = Convert.ToInt32(amount);
             transaction.StockPrice = Convert.ToDecimal(price);
@@ -49,14 +51,44 @@ namespace MockStockBackend.Services
             transaction.TransactionType = type;
 
             //Find the user and deduct from or add to their currency
-            var user = _context.Users.Find(userID);
+            var user = _context.Users.Find(userId);
             if(type == "buy"){
                 user.UserCurrency -= (Convert.ToDecimal(amount) * Convert.ToDecimal(price));
-                await _context.SaveChangesAsync();
+                //Check to see if stock is in the database already for the user
+                //If so then update the amount instead of creating a new entry
+                var result = _context.Stocks.Find(symbol, userId);
+
+                //Buying Stock
+                if(result == null){
+                    //Generate the new stock entry
+                    Stock stock = new Stock();
+                    stock.UserId = userId;
+                    stock.StockId = symbol;
+                    stock.StockQuantity = Convert.ToInt32(amount);
+
+                    _context.Stocks.Add(stock);
+                }
+                else{
+                //Update stock entry found
+                result.StockQuantity += Convert.ToInt32(amount);
+                }
             }
+            //Selling Stcok
             else{
                 user.UserCurrency += (Convert.ToDecimal(amount) * Convert.ToDecimal(price));
-                await _context.SaveChangesAsync();
+                //Check for how much of the stock the user owns
+                var result = _context.Stocks.Find(symbol, userId);
+                //Make sure user cannot sell more than they own
+                if(result.StockQuantity < Convert.ToInt32(amount)){
+                    return null;
+                }
+
+                //Update stock entry found
+                result.StockQuantity -= Convert.ToInt32(amount);
+                //If amount drops to zero, drop it from the user's inventory
+                if(result.StockQuantity == 0){
+                    _context.Remove(result);
+                }
             }
 
             //Add transaction to the entity model
@@ -77,60 +109,152 @@ namespace MockStockBackend.Services
             return addedTransaction;
         }
 
-        public async Task<Stock> AddStock(String symbol, String amount, int userId){
-            //Check to see if stock is in the database already for the user
-            //If so then update the amount instead of creating a new entry
-            var result = _context.Stocks.Find(symbol, userId);
+        /*
+        Data Fetching
+        */
 
-            if(result == null){
-                //Generate the new stock entry
-                Stock stock = new Stock();
-                stock.UserId = userId;
-                stock.StockId = symbol;
-                stock.StockQuantity = Convert.ToInt32(amount);
 
-                var dbResponse = _context.Stocks.Add(stock);
-                var addedStock = dbResponse.Entity;
+        public async Task<DetailedStock> FetchDetails(String symbol, HttpClient httpClient){
+            //Query the API for key details about a certain stock
+            try{
+            string price = await PriceQuery(symbol, httpClient);
 
-                //Add the stock to the database
-                try
-                {
-                    await _context.SaveChangesAsync();
-                }
-                catch (Exception e)
-                {
-                    Debug.WriteLine(e);
-                    addedStock = null;
-                }
+            var responseBody = await httpClient.GetStringAsync("stock/" + symbol + "/stats");
+            var results = JObject.Parse(responseBody);
 
-                return addedStock;
+            DetailedStock stock = new DetailedStock();
+
+            stock.symbol = symbol;
+            stock.price = Decimal.Parse(price);
+            stock.changePercent = (Decimal) results["day5ChangePercent"];
+            stock.ytdChange = (Decimal) results["ytdChangePercent"];
+            stock.high = (Decimal) results["week52high"];
+            stock.low = (Decimal) results["week52low"];
+
+            return stock;
+            }catch(Exception){
+                return null;
             }
-
-            //Update stock entry found
-            result.StockQuantity += Convert.ToInt32(amount);
-            await _context.SaveChangesAsync();
-
-            return result;
         }
 
-        public async Task<Stock> SubtractStock(String symbol, String amount, int userId){
-            //Check for how much of the stock the user owns
-            //frontend will make sure user does not enter more stocks than they own
-            var result = _context.Stocks.Find(symbol, userId);
-
-            //Update stock entry found
-            result.StockQuantity -= Convert.ToInt32(amount);
-            //If amount drops to zero, drop it from the user's inventory
-            if(result.StockQuantity == 0){
-                var dbResponse = _context.Remove(result);
-                var removedStock = dbResponse.Entity;
-                await _context.SaveChangesAsync();
-                return removedStock;
+        public async Task<MarketBatch> FetchMarket(HttpClient httpClient){
+            //Get the entire list of stock symbols and only grab the first 100
+            var referenceData = await httpClient.GetStringAsync("ref-data/symbols");
+            JArray results = JArray.Parse(referenceData);
+            string[] symbols = new string[100];
+            for(int i = 0; i < 100; i++){
+                symbols[i] = (string) results.ElementAt(i)["symbol"];
             }
-            await _context.SaveChangesAsync();
+            var responseBody = await httpClient.GetStringAsync("stock/market/batch?symbols=" + string.Join(",", symbols) + 
+                "&types=price,logo,previous");
+            var market = JObject.Parse(responseBody);
+            MarketBatch marketBatch = new MarketBatch();
 
-            return result;
+            //Get only the data needed for each stock
+            foreach(string symbol in symbols)
+            {
+                MarketStock x = new MarketStock();
+                x.symbol = symbol;
+                x.logo = (string) market[x.symbol]["logo"]["url"];
+                x.price = (decimal) market[x.symbol]["price"];
+                x.changePercent = (decimal) market[x.symbol]["previous"]["changePercent"];
+                marketBatch.stocks.Add(x);
+            }
+
+            //Get today's biggest gainers and losers
+            responseBody = await httpClient.GetStringAsync("stock/market/list/gainers");
+            var gainers = JArray.Parse(responseBody);
+            foreach(JToken stock in gainers)
+            {
+                MarketStock x = new MarketStock();
+                x.symbol = (string) stock["symbol"];
+                x.price = (decimal) stock["latestPrice"];
+                x.changePercent = (decimal) stock["changePercent"];
+                marketBatch.gainers.Add(x);
+            }
+
+            responseBody = await httpClient.GetStringAsync("stock/market/list/losers");
+            var losers = JArray.Parse(responseBody);
+            foreach(JToken stock in losers)
+            {
+                MarketStock x = new MarketStock();
+                x.symbol = (string) stock["symbol"];
+                x.price = (decimal) stock["latestPrice"];
+                x.changePercent = (decimal) stock["changePercent"];
+                marketBatch.losers.Add(x);
+            }
+
+            return marketBatch;
+        }
+
+        public async Task<List<ChartPoint>> FetchChart(String symbol, String range, HttpClient httpClient){
+            try{
+                var responseBody = await httpClient.GetStringAsync("stock/" + symbol + "/chart/" + range);
+                var points = JArray.Parse(responseBody);
+                List<ChartPoint> chart = new List<ChartPoint>();
+                foreach(JToken point in points)
+                {
+                    ChartPoint x = new ChartPoint();
+                    x.date = (string) point["date"];
+                    x.closingPrice = (decimal) point["close"];
+                    chart.Add(x);
+                }
+                return chart;
+            }
+            catch(Exception e){
+                Debug.WriteLine(e);
+                return null;
+            }
+        }
+
+        public async Task<List<StockBatch>> FetchBatch(List<string> symbols, HttpClient httpClient){
+            //Capitalize every symbol
+            symbols = symbols.ConvertAll(symbol => symbol.ToUpper());
+            
+            //Check if the batch request is over 100
+            //split it up into chunks if it is
+            List<StockBatch> batch = new List<StockBatch>();
+
+            if(symbols.Count() > 100){
+                int requests = (symbols.Count() / 100) + 1;
+                //For every 100 symbols, do a separate API request
+                for(int i = 1; i <= requests; i++){
+                    //Check if it's the last request of the batch
+                    //If so then a limit must be placed on the "GetRange" function
+                    int max;
+                    if(i != requests){
+                        max=100;
+                    }else{
+                        max=(symbols.Count() - (i*100-100));
+                    }
+                    string responseBody = await httpClient.GetStringAsync("stock/market/batch?symbols=" + String.Join(",", symbols.GetRange(i*100-100, max)) +
+                            "&types=price,previous");
+                    //Get only the data needed to return
+                    var tempList = JObject.Parse(responseBody);
+                    for(int j = 0; j < max; j++){
+                        StockBatch x = new StockBatch();
+                        x.symbol = symbols.ElementAt(j + (i*100 - 100));
+                        x.price = (decimal)tempList[x.symbol]["price"];
+                        x.changePercent = (decimal)tempList[x.symbol]["previous"]["changePercent"];
+                        batch.Add(x);
+                    }
+                }
+                return batch;
+            }
+
+            //When request is 100 or less stocks
+            var response = await httpClient.GetStringAsync("stock/market/batch?symbols=" + string.Join(",", symbols) + "&types=price,previous");
+            //Get only the required data fields and return a list of that
+            var list = JObject.Parse(response);
+            for(int i = 0; i < symbols.Count(); i++){
+                StockBatch x = new StockBatch();
+                x.symbol = symbols.ElementAt(i);
+                x.price = (decimal)list[x.symbol]["price"];
+                x.changePercent = (decimal)list[x.symbol]["previous"]["changePercent"];
+                batch.Add(x);
+            }
+
+            return batch;
         }
     }
-
 }

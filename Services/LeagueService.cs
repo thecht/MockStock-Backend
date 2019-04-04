@@ -1,25 +1,33 @@
 using System;
 using System.Linq;
+using System.Net.Http;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using MockStockBackend.DataModels;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
+using MockStockBackend.Services;
 
 namespace MockStockBackend.Services
 {
     public class LeagueService
     {
         private readonly ApplicationDbContext _context;
-        public LeagueService(ApplicationDbContext context)
+        private readonly StockService _stockService;
+        private readonly HttpClient httpClient;
+        
+        public LeagueService(ApplicationDbContext context, StockService stockService)
         {
             _context = context;
+            _stockService = stockService;
+            httpClient = new HttpClient();
+            httpClient.BaseAddress = new Uri("https://api.iextrading.com/1.0/");
         }
 
         public async Task<League> createLeague(int leagueHost, string leagueName, bool openEnrollment)
         {
             // Auto generate leagueID as a string, and return the entire league instead of a booleon.
-            var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ23456789";
+            var chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
             var leagueID = new char[8];
             var random = new Random();
 
@@ -253,7 +261,7 @@ namespace MockStockBackend.Services
             return leagues;
         }
 
-        /*public async Task<List<User>> viewLeaderboard(string leagueID)
+        public async Task<List<User>> viewLeaderboard(string leagueID)
         {
             // Get user ids from the league
             var res = from leagueUsers in _context.LeagueUsers
@@ -270,7 +278,45 @@ namespace MockStockBackend.Services
                         .Include(x => x.Stocks)
                         .ToListAsync();
             
-            return users;
-        }*/
+            var listOfUniqueStocks = new List<string>();
+            foreach (var user in users)
+            {
+                var stocksForUser = user.Stocks;
+                foreach (var stock in stocksForUser)
+                {
+                    var tickerSymbol = stock.StockId;
+                    // add it to your list here?  But ensure its unique first
+                    if (!listOfUniqueStocks.Contains(tickerSymbol))
+                    {
+                        listOfUniqueStocks.Add(tickerSymbol);
+                    }
+                }
+            }
+
+            List<StockBatch> batch = await _stockService.FetchBatch(listOfUniqueStocks, httpClient);
+
+            List<User> leaderBoard = new List<User>();
+            //string[,] leaderBoard = new string[users.Count, 2];
+            decimal funds;
+            //int i = 0;
+            
+            foreach (var user in users)
+            {
+                //leaderBoard[i, 0] = user.UserId.ToString();
+                funds = user.UserCurrency;
+                var stocksForUser = user.Stocks;
+                foreach (var stock in stocksForUser)
+                {
+                    decimal price = Convert.ToDecimal(batch.Find(x => x.symbol.Contains(stock.StockId)).price);
+                    funds = funds + (stock.StockQuantity * price);
+                }
+                //leaderBoard[i, 1] = funds.ToString();
+                leaderBoard.Add(new User() {UserId = user.UserId, UserCurrency = funds});
+                //i = i + 1;
+            }
+
+            List<User> sortedLeaderBoard = leaderBoard.OrderByDescending(x => x.UserCurrency).ToList();
+            return sortedLeaderBoard;
+        }
     }
 }

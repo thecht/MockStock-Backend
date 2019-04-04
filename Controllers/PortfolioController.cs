@@ -28,5 +28,16 @@ namespace MockStockBackend.Controllers
             var portfolio = await _portfolioService.retrievePortfolio(userId);
             return Newtonsoft.Json.JsonConvert.SerializeObject(portfolio);
         }
+
+        [AllowAnonymous]
+        [HttpGet("test")]
+        public async Task<IActionResult> TestPortfolio([FromBody]SymbolContainer symbols)
+        {
+            //Get the list of symbols needed for the batch request
+            var listOfSymbols = symbols.Symbols;
+            listOfSymbols = listOfSymbols.ConvertAll(symbol => symbol.ToUpper());
+            var res = await _portfolioService.TestPort(listOfSymbols);
+            return Ok(res);
+        }
     }
 }

@@ -94,5 +94,11 @@ namespace MockStockBackend.Services
 
             return retVal;
         }
+
+        public async Task<Object> TestPort(List<string> symbols)
+        {
+            var res = await _stockService.FetchBatch(symbols);
+            return res;
+        }
     }
 }

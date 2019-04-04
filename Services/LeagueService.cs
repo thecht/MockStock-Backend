@@ -311,7 +311,7 @@ namespace MockStockBackend.Services
                     funds = funds + (stock.StockQuantity * price);
                 }
                 //leaderBoard[i, 1] = funds.ToString();
-                leaderBoard.Add(new User() {UserId = user.UserId, UserCurrency = funds});
+                leaderBoard.Add(new User() {UserName = user.UserName, UserId = user.UserId, UserCurrency = funds});
                 //i = i + 1;
             }
 

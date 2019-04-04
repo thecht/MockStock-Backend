@@ -307,7 +307,7 @@ namespace MockStockBackend.Services
                 var stocksForUser = user.Stocks;
                 foreach (var stock in stocksForUser)
                 {
-                    decimal price = Convert.ToDecimal(batch.Find(x => x.symbol.Contains(stock.StockId)).price);
+                    decimal price = Convert.ToDecimal(batch.Find(x => x.symbol.Contains(stock.StockId.ToUpper())).price);
                     funds = funds + (stock.StockQuantity * price);
                 }
                 //leaderBoard[i, 1] = funds.ToString();

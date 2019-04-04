@@ -13,6 +13,8 @@ using MockStockBackend.Helpers;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using System.Dynamic;
+using System.Net.Http;
+using Newtonsoft.Json.Linq;
 
 namespace MockStockBackend.Services
 {
@@ -137,9 +139,26 @@ namespace MockStockBackend.Services
             tickerSymbols2.Add("msft");
             tickerSymbols2.Add("googl");
             tickerSymbols2.Add("air");
-            var stockServiceResponse = await _stockService.FetchBatch(tickerSymbols);
 
-            return stockServiceResponse;
+            List<StockBatch> batch = new List<StockBatch>();
+            var httpClient = new HttpClient();
+            httpClient.BaseAddress = new Uri("https://api.iextrading.com/1.0/");
+
+            var symbols = tickerSymbols2;
+            var response = await httpClient.GetStringAsync("stock/market/batch?symbols=" + string.Join(",", symbols) + "&types=price,previous");
+            var list = JObject.Parse(response);
+            for(int i = 0; i < symbols.Count(); i++){
+                StockBatch x = new StockBatch();
+                x.symbol = symbols.ElementAt(i);
+                x.price = (decimal)list[x.symbol]["price"];
+                x.changePercent = (decimal)list[x.symbol]["previous"]["changePercent"];
+                batch.Add(x);
+            }
+            
+            
+            //var stockServiceResponse = await _stockService.FetchBatch(tickerSymbols);
+
+            return batch;
         }
     }
 }

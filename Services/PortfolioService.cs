@@ -144,9 +144,10 @@ namespace MockStockBackend.Services
             var httpClient = new HttpClient();
             httpClient.BaseAddress = new Uri("https://api.iextrading.com/1.0/");
 
-            var symbols = tickerSymbols2;
+            var symbols = tickerSymbols;
             var response = await httpClient.GetStringAsync("stock/market/batch?symbols=" + string.Join(",", symbols) + "&types=price,previous");
-            return response;
+            
+            var jresponse = JObject.Parse(response);
             // var list = JObject.Parse(response);
             // for(int i = 0; i < symbols.Count(); i++){
             //     StockBatch x = new StockBatch();
@@ -155,7 +156,7 @@ namespace MockStockBackend.Services
             //     x.changePercent = (decimal)list[x.symbol]["previous"]["changePercent"];
             //     batch.Add(x);
             // }
-            
+            return response;
             
             //var stockServiceResponse = await _stockService.FetchBatch(tickerSymbols);
 

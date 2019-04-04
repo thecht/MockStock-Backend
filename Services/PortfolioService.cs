@@ -144,7 +144,7 @@ namespace MockStockBackend.Services
             var httpClient = new HttpClient();
             httpClient.BaseAddress = new Uri("https://api.iextrading.com/1.0/");
 
-            var symbols = tickerSymbols;
+            var symbols = tickerSymbols2;
             var response = await httpClient.GetStringAsync("stock/market/batch?symbols=" + string.Join(",", symbols) + "&types=price,previous");
             
             var jresponse = JObject.Parse(response);

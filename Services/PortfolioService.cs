@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Net.Http;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
@@ -13,6 +14,7 @@ using MockStockBackend.Helpers;
 using System.Collections.Generic;
 using MockStockBackend.Services;
 using Microsoft.EntityFrameworkCore;
+using System.Dynamic;
 
 namespace MockStockBackend.Services
 {
@@ -20,16 +22,29 @@ namespace MockStockBackend.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly AppSettings _appSettings;
-        public PortfolioService(ApplicationDbContext context, IOptions<AppSettings> appSettings)
+        private readonly StockService _stockService;
+        private readonly HttpClient httpClient;
+        public PortfolioService(ApplicationDbContext context, IOptions<AppSettings> appSettings, StockService stockService)
         {
             _context = context;
             _appSettings = appSettings.Value;
+            _stockService = stockService;
+            httpClient = new HttpClient();
+            httpClient.BaseAddress = new Uri("https://api.iextrading.com/1.0/");
         }
 
-        //public async Task<(decimal, List<Stock>)> retrievePortfolio(int userId)
+        public class StockInfoPrice
+        {
+            public string StockId { get; set; }
+            public int UserId { get; set; }
+            public int StockQuantity { get; set; }
+            public decimal StockPrice { get; set; }
+            public decimal ChangePercent { get; set; }
+        }
+
         public async Task<Object> retrievePortfolio(int userId)
         {
-            // Get user ids from the league
+            // Get user stocks.
             var res = from Stock in _context.Stocks
                         where Stock.UserId == userId
                         select new Stock
@@ -39,24 +54,48 @@ namespace MockStockBackend.Services
                             StockQuantity = Stock.StockQuantity
                         };
 
-
+            // Convert results to List.
             var stockInfo = await res.ToListAsync();
 
+            // Create new list for unique Stock IDs.
+            var listOfUniqueStocks = new List<string>();
+            foreach (var Stock in res)
+            {
+                var tickerSymbol = Stock.StockId;
+                listOfUniqueStocks.Add(tickerSymbol);
+            }
 
+            // Send Stock IDs to stockService for a price check.
+            List<StockBatch> batch = await _stockService.FetchBatch(listOfUniqueStocks, httpClient);
+
+            // Create new StockInfoPrice array, to match the values in Res with those from the Batch result.
+            StockInfoPrice[] stockInfoPrice = new StockInfoPrice[listOfUniqueStocks.Count];
+            int i = 0;
+
+            foreach (var Stock in res)
+            {
+                stockInfoPrice[i] = new StockInfoPrice();
+                stockInfoPrice[i].StockId = Stock.StockId;
+                stockInfoPrice[i].UserId = Stock.UserId;
+                stockInfoPrice[i].StockQuantity = Stock.StockQuantity;
+                decimal price = Convert.ToDecimal(batch.Find(x => x.symbol.Contains(Stock.StockId)).price);
+                stockInfoPrice[i].StockPrice = price;
+                decimal change = Convert.ToDecimal(batch.Find(x => x.symbol.Contains(Stock.StockId)).changePercent);
+                stockInfoPrice[i].ChangePercent = change;
+                i++;
+            }
+
+            // Retrieve the User's available currency.
             decimal userCurrency = (from User in _context.Users
                                where User.UserId == userId
                                select User.UserCurrency).SingleOrDefault();
             
-
+            // Package the userCurrency with the new Stock Object, for a single return.
             var retVal = new {
                 UserCurrency = userCurrency,
-                Stock = stockInfo
+                Stock = stockInfoPrice
             };
 
-
-
-
-            //return (userCurrency, stockInfo);
             return retVal;
         }
     }

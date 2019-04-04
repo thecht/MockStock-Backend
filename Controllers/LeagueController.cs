@@ -82,13 +82,14 @@ namespace MockStockBackend.Controllers
             return Newtonsoft.Json.JsonConvert.SerializeObject(leagues);
         }
 
-        /*[HttpGet("leaderboard")]
-        public async Task<string> viewLeaderboard()
+        [HttpGet("leaderboard/{leagueId}")]
+        //[HttpGet]
+        public async Task<string> viewLeaderboard(string leagueID)
         {
             // Retrieve userID from token, and check to see if they belong to league before showing leaderboard.
-            var leagueId = (string)HttpContext.Request.Headers["leagueID"];
-            var users = await _leagueService.viewLeaderboard(leagueId);
+            //var leagueID = (string)HttpContext.Request.Headers["leagueID"];
+            var users = await _leagueService.viewLeaderboard(leagueID);
             return Newtonsoft.Json.JsonConvert.SerializeObject(users);
-        }*/
+        }
     }
 }

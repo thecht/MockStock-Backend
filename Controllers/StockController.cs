@@ -154,5 +154,4 @@ namespace MockStockBackend.Controllers
             return Newtonsoft.Json.JsonConvert.SerializeObject(batch);
         }
     }
-
 }

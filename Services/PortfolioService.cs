@@ -102,29 +102,36 @@ namespace MockStockBackend.Services
 
         public async Task<Object> TestPort(List<string> symbols)
         {
-            var res = await _stockService.FetchBatch(symbols);
+            var tickerSymbols = new List<string>();
+            tickerSymbols.Add("msft");
+            tickerSymbols.Add("googl");
+            tickerSymbols.Add("air");
+            var res = await _stockService.FetchBatch(tickerSymbols);
             return res;
         }
 
         public async Task<Object> TestPortfolioRequest(int userId)
         {
             // Get user stocks.
-            var stocks =   await (from Stock in _context.Stocks
-                        where Stock.UserId == userId
-                        select new Stock
-                        {
-                            StockId = Stock.StockId,
-                            UserId = Stock.UserId,
-                            StockQuantity = Stock.StockQuantity
-                        }).ToListAsync();
+            var stocks = await (from Stock in _context.Stocks
+                                where Stock.UserId == userId
+                                select new Stock
+                                {
+                                    StockId = Stock.StockId,
+                                    UserId = Stock.UserId,
+                                    StockQuantity = Stock.StockQuantity
+                                }).ToListAsync();
             
             var tickerSymbols = new List<string>();
             foreach (var stock in stocks)
             {
                 tickerSymbols.Add(stock.StockId);
             }
-
-            var stockServiceResponse = await _stockService.FetchBatch(tickerSymbols);
+            var tickerSymbols2 = new List<string>();
+            tickerSymbols2.Add("msft");
+            tickerSymbols2.Add("googl");
+            tickerSymbols2.Add("air");
+            var stockServiceResponse = await _stockService.FetchBatch(tickerSymbols2);
 
             return stockServiceResponse;
         }

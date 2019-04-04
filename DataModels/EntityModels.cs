@@ -78,16 +78,16 @@ namespace MockStockBackend.DataModels
         public User User { get; set; }
     }
 
+    public class SymbolContainer
+    {
+        public List<string> Symbols { get; set;}
+    }
+    
     public class StockBatch
     {
         public string symbol { get; set; }
         public decimal price { get; set; }
         public decimal changePercent { get; set; }
-    }
-
-    public class SymbolContainer
-    {
-        public List<string> Symbols { get; set;}
     }
 
     public class DetailedStock

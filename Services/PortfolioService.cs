@@ -105,5 +105,28 @@ namespace MockStockBackend.Services
             var res = await _stockService.FetchBatch(symbols);
             return res;
         }
+
+        public async Task<Object> TestPortfolioRequest(int userId)
+        {
+            // Get user stocks.
+            var stocks =   await (from Stock in _context.Stocks
+                        where Stock.UserId == userId
+                        select new Stock
+                        {
+                            StockId = Stock.StockId,
+                            UserId = Stock.UserId,
+                            StockQuantity = Stock.StockQuantity
+                        }).ToListAsync();
+            
+            var tickerSymbols = new List<string>();
+            foreach (var stock in stocks)
+            {
+                tickerSymbols.Add(stock.StockId);
+            }
+
+            var stockServiceResponse = await _stockService.FetchBatch(tickerSymbols);
+
+            return stockServiceResponse;
+        }
     }
 }

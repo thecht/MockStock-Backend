@@ -39,5 +39,13 @@ namespace MockStockBackend.Controllers
             var res = await _portfolioService.TestPort(listOfSymbols);
             return Ok(res);
         }
+
+        [HttpGet("testp")]
+        public async Task<IActionResult> NewGetPortfolio()
+        {
+            var userId = Int32.Parse(HttpContext.User.FindFirst(ClaimTypes.Name).Value);
+            var portfolio = await _portfolioService.TestPortfolioRequest(userId);
+            return Ok(portfolio);
+        }
     }
 }

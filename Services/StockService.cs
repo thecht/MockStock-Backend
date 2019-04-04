@@ -245,12 +245,6 @@ namespace MockStockBackend.Services
             }
 
             //When request is 100 or less stocks
-            foreach (var item in symbols)
-            {
-                Console.WriteLine(item);
-            }
-            Console.WriteLine(symbols.ToString());
-
             var response = await httpClient.GetStringAsync("stock/market/batch?symbols=" + string.Join(",", symbols) + "&types=price,previous");
             //Get only the required data fields and return a list of that
             var list = JObject.Parse(response);

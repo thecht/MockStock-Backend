@@ -51,7 +51,7 @@ namespace MockStockBackend.Services
                         };
 
             // Convert results to List.
-            var stockInfo = await res.ToListAsync();
+            //var stockInfo = await res.ToListAsync();
 
             // Create new list for unique Stock IDs.
             var listOfUniqueStocks = new List<string>();
@@ -59,8 +59,13 @@ namespace MockStockBackend.Services
             {
                 var tickerSymbol = Stock.StockId;
                 listOfUniqueStocks.Add(tickerSymbol);
+                Trace.WriteLine(tickerSymbol);
             }
 
+            foreach (var item in listOfUniqueStocks)
+            {
+                Trace.WriteLine(item);
+            }
             // Send Stock IDs to stockService for a price check.
             List<StockBatch> batch = await _stockService.FetchBatch(listOfUniqueStocks);
 

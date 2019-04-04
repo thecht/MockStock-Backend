@@ -125,13 +125,19 @@ namespace MockStockBackend.Services
             var tickerSymbols = new List<string>();
             foreach (var stock in stocks)
             {
-                tickerSymbols.Add(stock.StockId);
+                tickerSymbols.Add(stock.StockId.ToUpper());
             }
+            
+            foreach (var s in tickerSymbols)
+            {
+                Console.WriteLine(s);
+            }
+
             var tickerSymbols2 = new List<string>();
             tickerSymbols2.Add("msft");
             tickerSymbols2.Add("googl");
             tickerSymbols2.Add("air");
-            var stockServiceResponse = await _stockService.FetchBatch(tickerSymbols2);
+            var stockServiceResponse = await _stockService.FetchBatch(tickerSymbols);
 
             return stockServiceResponse;
         }

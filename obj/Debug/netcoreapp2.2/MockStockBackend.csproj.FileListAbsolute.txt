@@ -1,0 +1,14 @@
+/Users/theodorehecht/Desktop/MockStock-Backend/bin/Debug/netcoreapp2.2/MockStockBackend.deps.json
+/Users/theodorehecht/Desktop/MockStock-Backend/bin/Debug/netcoreapp2.2/MockStockBackend.runtimeconfig.json
+/Users/theodorehecht/Desktop/MockStock-Backend/bin/Debug/netcoreapp2.2/MockStockBackend.runtimeconfig.dev.json
+/Users/theodorehecht/Desktop/MockStock-Backend/bin/Debug/netcoreapp2.2/MockStockBackend.dll
+/Users/theodorehecht/Desktop/MockStock-Backend/bin/Debug/netcoreapp2.2/MockStockBackend.pdb
+/Users/theodorehecht/Desktop/MockStock-Backend/obj/Debug/netcoreapp2.2/MockStockBackend.csprojAssemblyReference.cache
+/Users/theodorehecht/Desktop/MockStock-Backend/obj/Debug/netcoreapp2.2/MockStockBackend.csproj.CoreCompileInputs.cache
+/Users/theodorehecht/Desktop/MockStock-Backend/obj/Debug/netcoreapp2.2/MockStockBackend.RazorAssemblyInfo.cache
+/Users/theodorehecht/Desktop/MockStock-Backend/obj/Debug/netcoreapp2.2/MockStockBackend.RazorAssemblyInfo.cs
+/Users/theodorehecht/Desktop/MockStock-Backend/obj/Debug/netcoreapp2.2/MockStockBackend.AssemblyInfoInputs.cache
+/Users/theodorehecht/Desktop/MockStock-Backend/obj/Debug/netcoreapp2.2/MockStockBackend.AssemblyInfo.cs
+/Users/theodorehecht/Desktop/MockStock-Backend/obj/Debug/netcoreapp2.2/MockStockBackend.RazorTargetAssemblyInfo.cache
+/Users/theodorehecht/Desktop/MockStock-Backend/obj/Debug/netcoreapp2.2/MockStockBackend.dll
+/Users/theodorehecht/Desktop/MockStock-Backend/obj/Debug/netcoreapp2.2/MockStockBackend.pdb

@@ -1,12 +1,10 @@
 using System;
 using System.Linq;
-using System.Net.Http;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using MockStockBackend.DataModels;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
-using MockStockBackend.Services;
 
 namespace MockStockBackend.Services
 {
@@ -14,14 +12,11 @@ namespace MockStockBackend.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly StockService _stockService;
-        private readonly HttpClient httpClient;
         
         public LeagueService(ApplicationDbContext context, StockService stockService)
         {
             _context = context;
             _stockService = stockService;
-            httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri("https://api.iextrading.com/1.0/");
         }
 
         public async Task<League> createLeague(int leagueHost, string leagueName, bool openEnrollment)
@@ -293,7 +288,7 @@ namespace MockStockBackend.Services
                 }
             }
 
-            List<StockBatch> batch = await _stockService.FetchBatch(listOfUniqueStocks, httpClient);
+            List<StockBatch> batch = await _stockService.FetchBatch(listOfUniqueStocks);
 
             List<User> leaderBoard = new List<User>();
             //string[,] leaderBoard = new string[users.Count, 2];

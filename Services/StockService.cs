@@ -22,14 +22,16 @@ namespace MockStockBackend.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly AppSettings _appSettings;
-
+        private readonly HttpClient httpClient;
         public StockService(ApplicationDbContext context, IOptions<AppSettings> appSettings)
         {
             _context = context;
             _appSettings = appSettings.Value;
+            httpClient = new HttpClient();
+            httpClient.BaseAddress = new Uri("https://api.iextrading.com/1.0/");
         }
 
-        public async Task<string> PriceQuery(string symbol, HttpClient httpClient)
+        public async Task<string> PriceQuery(string symbol)
         {
             //Query the IEX API for the price using an HTTP GET request
             try{
@@ -114,10 +116,10 @@ namespace MockStockBackend.Services
         */
 
 
-        public async Task<DetailedStock> FetchDetails(String symbol, HttpClient httpClient){
+        public async Task<DetailedStock> FetchDetails(String symbol){
             //Query the API for key details about a certain stock
             try{
-            string price = await PriceQuery(symbol, httpClient);
+            string price = await PriceQuery(symbol);
 
             var responseBody = await httpClient.GetStringAsync("stock/" + symbol + "/stats");
             var results = JObject.Parse(responseBody);
@@ -137,7 +139,7 @@ namespace MockStockBackend.Services
             }
         }
 
-        public async Task<MarketBatch> FetchMarket(HttpClient httpClient){
+        public async Task<MarketBatch> FetchMarket(){
             //Get the entire list of stock symbols and only grab the first 100
             var referenceData = await httpClient.GetStringAsync("ref-data/symbols");
             JArray results = JArray.Parse(referenceData);
@@ -187,7 +189,7 @@ namespace MockStockBackend.Services
             return marketBatch;
         }
 
-        public async Task<List<ChartPoint>> FetchChart(String symbol, String range, HttpClient httpClient){
+        public async Task<List<ChartPoint>> FetchChart(String symbol, String range){
             try{
                 var responseBody = await httpClient.GetStringAsync("stock/" + symbol + "/chart/" + range);
                 var points = JArray.Parse(responseBody);
@@ -207,7 +209,7 @@ namespace MockStockBackend.Services
             }
         }
 
-        public async Task<List<StockBatch>> FetchBatch(List<string> symbols, HttpClient httpClient){
+        public async Task<List<StockBatch>> FetchBatch(List<string> symbols){
             //Capitalize every symbol
             symbols = symbols.ConvertAll(symbol => symbol.ToUpper());
             
@@ -243,13 +245,6 @@ namespace MockStockBackend.Services
             }
 
             //When request is 100 or less stocks
-            var res = "";
-            try {
-                res = await httpClient.GetStringAsync("stock/market/batch?symbols=" + string.Join(",", symbols) + "&types=price,previous");
-            } catch(Exception e) {
-                Console.WriteLine(res);
-                Console.WriteLine(e);
-            }
             var response = await httpClient.GetStringAsync("stock/market/batch?symbols=" + string.Join(",", symbols) + "&types=price,previous");
             //Get only the required data fields and return a list of that
             var list = JObject.Parse(response);

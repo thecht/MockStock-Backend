@@ -1,6 +1,5 @@
 using System;
 using System.Diagnostics;
-using System.Net.Http;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
@@ -12,7 +11,6 @@ using Microsoft.IdentityModel.Tokens;
 using MockStockBackend.DataModels;
 using MockStockBackend.Helpers;
 using System.Collections.Generic;
-using MockStockBackend.Services;
 using Microsoft.EntityFrameworkCore;
 using System.Dynamic;
 
@@ -23,14 +21,12 @@ namespace MockStockBackend.Services
         private readonly ApplicationDbContext _context;
         private readonly AppSettings _appSettings;
         private readonly StockService _stockService;
-        private readonly HttpClient httpClient;
+
         public PortfolioService(ApplicationDbContext context, IOptions<AppSettings> appSettings, StockService stockService)
         {
             _context = context;
             _appSettings = appSettings.Value;
             _stockService = stockService;
-            httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri("https://api.iextrading.com/1.0/");
         }
 
         public class StockInfoPrice
@@ -66,7 +62,7 @@ namespace MockStockBackend.Services
             }
 
             // Send Stock IDs to stockService for a price check.
-            List<StockBatch> batch = await _stockService.FetchBatch(listOfUniqueStocks, httpClient);
+            List<StockBatch> batch = await _stockService.FetchBatch(listOfUniqueStocks);
 
             // Create new StockInfoPrice array, to match the values in Res with those from the Batch result.
             StockInfoPrice[] stockInfoPrice = new StockInfoPrice[listOfUniqueStocks.Count];

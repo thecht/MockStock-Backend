@@ -137,13 +137,27 @@ namespace MockStockBackend.Services
             }
         }
 
-        public async Task<MarketBatch> FetchMarket(HttpClient httpClient){
+        public async Task<MarketBatch> FetchMarket(String sort, HttpClient httpClient){
             //Get the entire list of stock symbols and only grab the first 100
             var referenceData = await httpClient.GetStringAsync("ref-data/symbols");
             JArray results = JArray.Parse(referenceData);
             string[] symbols = new string[100];
-            for(int i = 0; i < 100; i++){
-                symbols[i] = (string) results.ElementAt(i)["symbol"];
+            //Get either the first 100 or last 100 if sorting ascending or descending
+            if(sort == "asc"){
+                for(int i = 0; i < 100; i++){
+                    symbols[i] = (string) results.ElementAt(i)["symbol"];
+                }
+            }
+            else{
+                int index = 0;
+                int start = results.Count()-1;
+                //Skip crypto at the end
+                while((string) results.ElementAt(start)["type"] == "crypto")
+                    start--;
+                for(int i = start; i > start-100; i--){
+                    symbols[index] = (string) results.ElementAt(i)["symbol"];
+                    index++;
+                }
             }
             var responseBody = await httpClient.GetStringAsync("stock/market/batch?symbols=" + string.Join(",", symbols) + 
                 "&types=price,logo,previous");
@@ -156,8 +170,15 @@ namespace MockStockBackend.Services
                 MarketStock x = new MarketStock();
                 x.symbol = symbol;
                 x.logo = (string) market[x.symbol]["logo"]["url"];
-                x.price = (decimal) market[x.symbol]["price"];
-                x.changePercent = (decimal) market[x.symbol]["previous"]["changePercent"];
+                //Some stocks may have null price or previous
+                if((string) market[x.symbol]["price"] == null){
+                    x.price = 0;
+                    x.changePercent = 0;
+                }
+                else{
+                    x.price = (decimal) market[x.symbol]["price"];
+                    x.changePercent = (decimal) market[x.symbol]["previous"]["changePercent"];
+                }
                 marketBatch.stocks.Add(x);
             }
 
@@ -182,6 +203,23 @@ namespace MockStockBackend.Services
                 x.price = (decimal) stock["latestPrice"];
                 x.changePercent = (decimal) stock["changePercent"];
                 marketBatch.losers.Add(x);
+            }
+            //Get the logo for gainers and losers
+            List<string> list = new List<string>();
+            foreach(MarketStock stock in marketBatch.gainers){
+                list.Add(stock.symbol);
+            }
+            foreach(MarketStock stock in marketBatch.losers){
+                list.Add(stock.symbol);
+            }
+            responseBody = await httpClient.GetStringAsync("stock/market/batch?symbols=" + string.Join(",", list) + 
+                "&types=logo");
+            var logos = JObject.Parse(responseBody);
+            for(int i = 0; i < gainers.Count(); i++){
+                marketBatch.gainers.ElementAt(i).logo = (string) logos[list.ElementAt(i)]["logo"]["url"];
+            }
+            for(int i = 0; i < losers.Count(); i++){
+                marketBatch.losers.ElementAt(i).logo = (string) logos[list.ElementAt(i+gainers.Count())]["logo"]["url"];
             }
 
             return marketBatch;

@@ -117,11 +117,23 @@ namespace MockStockBackend.Controllers
         [AllowAnonymous]
         [HttpGet("marketplace")]
         public async Task<String> getMarket(){
+            string sort = (string) HttpContext.Request.Headers["sort"];
 
             //Fetch the batch data needed for the marketplace
-            var market = await _stockService.FetchMarket();
-            
+            var market = await _stockService.FetchMarket(sort);
+
             return Newtonsoft.Json.JsonConvert.SerializeObject(market);
+        }
+
+        [AllowAnonymous]
+        [HttpGet("search")]
+        public async Task<String> searchMarket(){
+            string search = (string) HttpContext.Request.Headers["search"];
+
+            //Search for stocks that match the search string
+            var results = await _stockService.SearchMarket(search);
+
+            return Newtonsoft.Json.JsonConvert.SerializeObject(results);
         }
 
         [AllowAnonymous]

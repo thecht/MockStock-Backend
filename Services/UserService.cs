@@ -87,5 +87,19 @@ namespace MockStockBackend.Services
             return user;
         }
 
+        /*
+        public async Task<decimal> ModifyFunds(int userID, decimal fundChange) {
+            User result = (from Users in _context.Users
+                               where Users.UserId == userID
+                               select Users).SingleOrDefault();
+
+            result.UserCurrency = result.UserCurrency + fundChange;
+
+            //Context.SaveChanges;
+            await _context.SaveChangesAsync();
+
+            return result.UserCurrency;
+        }
+        */
     }
 }

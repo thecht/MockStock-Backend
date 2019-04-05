@@ -5,21 +5,25 @@ using System.Threading.Tasks;
 using MockStockBackend.DataModels;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
+using MockStockBackend.Services;
 
 namespace MockStockBackend.Services
 {
     public class LeagueService
     {
         private readonly ApplicationDbContext _context;
-        public LeagueService(ApplicationDbContext context)
+        private readonly StockService _stockService;
+        
+        public LeagueService(ApplicationDbContext context, StockService stockService)
         {
             _context = context;
+            _stockService = stockService;
         }
 
         public async Task<League> createLeague(int leagueHost, string leagueName, bool openEnrollment)
         {
             // Auto generate leagueID as a string, and return the entire league instead of a booleon.
-            var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ23456789";
+            var chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
             var leagueID = new char[8];
             var random = new Random();
 
@@ -253,7 +257,7 @@ namespace MockStockBackend.Services
             return leagues;
         }
 
-        /*public async Task<List<User>> viewLeaderboard(string leagueID)
+        public async Task<List<User>> viewLeaderboard(string leagueID)
         {
             // Get user ids from the league
             var res = from leagueUsers in _context.LeagueUsers
@@ -270,7 +274,47 @@ namespace MockStockBackend.Services
                         .Include(x => x.Stocks)
                         .ToListAsync();
             
-            return users;
-        }*/
+            var listOfUniqueStocks = new List<string>();
+            foreach (var user in users)
+            {
+                var stocksForUser = user.Stocks;
+                foreach (var stock in stocksForUser)
+                {
+                    var tickerSymbol = stock.StockId;
+                    // add it to your list here?  But ensure its unique first
+                    if (!listOfUniqueStocks.Contains(tickerSymbol))
+                    {
+                        listOfUniqueStocks.Add(tickerSymbol);
+                    }
+                }
+            }
+
+            List<User> leaderBoard = new List<User>();
+
+            // Prevent it from moving forward with 0 Unique Stocks.  Returns an empty List.
+            if (listOfUniqueStocks.Count == 0)
+            {
+                return leaderBoard;
+            }
+
+            List<StockBatch> batch = await _stockService.FetchBatch(listOfUniqueStocks);
+
+            decimal funds;
+            
+            foreach (var user in users)
+            {
+                funds = user.UserCurrency;
+                var stocksForUser = user.Stocks;
+                foreach (var stock in stocksForUser)
+                {
+                    decimal price = Convert.ToDecimal(batch.Find(x => x.symbol.Contains(stock.StockId.ToUpper())).price);
+                    funds = funds + (stock.StockQuantity * price);
+                }
+                leaderBoard.Add(new User() {UserName = user.UserName, UserId = user.UserId, UserCurrency = funds});
+            }
+
+            List<User> sortedLeaderBoard = leaderBoard.OrderByDescending(x => x.UserCurrency).ToList();
+            return sortedLeaderBoard;
+        }
     }
 }

@@ -23,6 +23,7 @@ namespace MockStockBackend.Services
         private readonly ApplicationDbContext _context;
         private readonly AppSettings _appSettings;
         private readonly HttpClient httpClient;
+
         public StockService(ApplicationDbContext context, IOptions<AppSettings> appSettings)
         {
             _context = context;
@@ -328,7 +329,6 @@ namespace MockStockBackend.Services
                 return null;
             }
         }
-
 
         public async Task<List<StockBatch>> FetchBatch(List<string> symbols){
             //Error checking for an empty list

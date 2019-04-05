@@ -122,7 +122,6 @@ namespace MockStockBackend.Controllers
             //Fetch the batch data needed for the marketplace
             var market = await _stockService.FetchMarket(sort);
 
-            
             return Newtonsoft.Json.JsonConvert.SerializeObject(market);
         }
 

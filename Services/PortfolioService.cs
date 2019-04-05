@@ -13,7 +13,6 @@ using MockStockBackend.Helpers;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using System.Dynamic;
-using System.Net.Http;
 using Newtonsoft.Json.Linq;
 
 namespace MockStockBackend.Services
@@ -31,6 +30,7 @@ namespace MockStockBackend.Services
             _stockService = stockService;
         }
 
+        // Created to facilitate a new return object.
         public class StockInfoPrice
         {
             public string StockId { get; set; }
@@ -42,7 +42,7 @@ namespace MockStockBackend.Services
 
         public async Task<Object> retrievePortfolio(int userId)
         {
-            // Get user stocks.
+            // Get user's stocks.
             var res = from Stock in _context.Stocks
                         where Stock.UserId == userId
                         select new Stock
@@ -52,9 +52,6 @@ namespace MockStockBackend.Services
                             StockQuantity = Stock.StockQuantity
                         };
 
-            // Convert results to List.
-            //var stockInfo = await res.ToListAsync();
-
             // Create new list for unique Stock IDs.
             var listOfUniqueStocks = new List<string>();
             foreach (var Stock in res)
@@ -63,13 +60,21 @@ namespace MockStockBackend.Services
                 listOfUniqueStocks.Add(tickerSymbol);
             }
 
-            // Send Stock IDs to stockService for a price check.
-            List<StockBatch> batch = await _stockService.FetchBatch(listOfUniqueStocks);
-
             // Create new StockInfoPrice array, to match the values in Res with those from the Batch result.
             StockInfoPrice[] stockInfoPrice = new StockInfoPrice[listOfUniqueStocks.Count];
+
+            // Prevent it from moving forward with 0 Unique Stocks.  Returns an empty Array.
+            if (listOfUniqueStocks.Count == 0)
+            {
+                return stockInfoPrice;
+            }
+
+            // Send Stock IDs to stockService for a price check.
+            List<StockBatch> batch = await _stockService.FetchBatch(listOfUniqueStocks);
+            
             int i = 0;
 
+            // Put together information from Res and Batch to form an array of a new object.
             foreach (var Stock in res)
             {
                 stockInfoPrice[i] = new StockInfoPrice();
@@ -96,7 +101,5 @@ namespace MockStockBackend.Services
 
             return retVal;
         }
-
-        
     }
 }

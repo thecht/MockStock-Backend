@@ -102,60 +102,6 @@ namespace MockStockBackend.Services
             return retVal;
         }
 
-        public async Task<Object> TestPort(List<string> symbols)
-        {
-            var tickerSymbols = new List<string>();
-            tickerSymbols.Add("msft");
-            tickerSymbols.Add("googl");
-            tickerSymbols.Add("air");
-            var res = await _stockService.FetchBatch(tickerSymbols);
-            return res;
-        }
-
-        public async Task<Object> TestPortfolioRequest(int userId)
-        {
-            // Get user stocks.
-            var stocks = await (from Stock in _context.Stocks
-                                where Stock.UserId == userId
-                                select new Stock
-                                {
-                                    StockId = Stock.StockId,
-                                    UserId = Stock.UserId,
-                                    StockQuantity = Stock.StockQuantity
-                                }).ToListAsync();
-            
-            var tickerSymbols = new List<string>();
-            foreach (var stock in stocks)
-            {
-                tickerSymbols.Add(stock.StockId.ToUpper());
-            }
-
-            var tickerSymbols2 = new List<string>();
-            tickerSymbols2.Add("msft");
-            tickerSymbols2.Add("googl");
-            tickerSymbols2.Add("air");
-
-            List<StockBatch> batch = new List<StockBatch>();
-            var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri("https://api.iextrading.com/1.0/");
-
-            var symbols = tickerSymbols;
-            var response = await httpClient.GetStringAsync("stock/market/batch?symbols=" + string.Join(",", symbols) + "&types=price,previous");
-            
-            var jresponse = JObject.Parse(response);
-            // var list = JObject.Parse(response);
-            // for(int i = 0; i < symbols.Count(); i++){
-            //     StockBatch x = new StockBatch();
-            //     x.symbol = symbols.ElementAt(i);
-            //     x.price = (decimal)list[x.symbol]["price"];
-            //     x.changePercent = (decimal)list[x.symbol]["previous"]["changePercent"];
-            //     batch.Add(x);
-            // }
-            return response;
-            
-            //var stockServiceResponse = await _stockService.FetchBatch(tickerSymbols);
-
-            return batch;
-        }
+        
     }
 }

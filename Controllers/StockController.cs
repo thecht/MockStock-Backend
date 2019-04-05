@@ -20,12 +20,9 @@ namespace MockStockBackend.Controllers
     public class StockController: ControllerBase
     {
         private readonly StockService _stockService;
-        private readonly HttpClient httpClient;
         public StockController(StockService stockService)
         {
             _stockService = stockService;
-            httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri("https://api.iextrading.com/1.0/");
         }
 
         [AllowAnonymous]
@@ -34,7 +31,7 @@ namespace MockStockBackend.Controllers
         {
             //Search for the stock price with the symbol given
             var symbol = (string)HttpContext.Request.Headers["symbol"];
-            string price = await _stockService.PriceQuery(symbol, httpClient);
+            string price = await _stockService.PriceQuery(symbol);
             if(price == null){
                 return "{\"error\": \"incorrect stock symbol\"}";
             }
@@ -49,7 +46,7 @@ namespace MockStockBackend.Controllers
             //Get the stock symbol and amount to purchase
             var symbol = (string)HttpContext.Request.Headers["symbol"];
             var amount = (string)HttpContext.Request.Headers["amount"];
-            var price = await _stockService.PriceQuery(symbol, httpClient);
+            var price = await _stockService.PriceQuery(symbol);
             //Make sure stock symbol exists
             if(price == null){
                 return "{\"error\": \"incorrect stock symbol\"}";
@@ -80,7 +77,7 @@ namespace MockStockBackend.Controllers
             //Get stock symbol and amount to sell
             var symbol = (string)HttpContext.Request.Headers["symbol"];
             var amount = (string)HttpContext.Request.Headers["amount"];
-            var price = await _stockService.PriceQuery(symbol, httpClient);
+            var price = await _stockService.PriceQuery(symbol);
             //Check for valid symbol
             if(price == null){
                 return "{\"error\": \"incorrect stock symbol\"}";
@@ -109,7 +106,7 @@ namespace MockStockBackend.Controllers
         public async Task<string> getDetails(){
             string symbol = (string)HttpContext.Request.Headers["symbol"];
 
-            var details = await _stockService.FetchDetails(symbol, httpClient);
+            var details = await _stockService.FetchDetails(symbol);
 
             if(details == null){
                 return "Please enter a valid ticker symbol.";
@@ -124,7 +121,7 @@ namespace MockStockBackend.Controllers
             string sort = (string) HttpContext.Request.Headers["sort"];
 
             //Fetch the batch data needed for the marketplace
-            var market = await _stockService.FetchMarket(sort, httpClient);
+            var market = await _stockService.FetchMarket(sort);
             
             return Newtonsoft.Json.JsonConvert.SerializeObject(market);
         }
@@ -135,7 +132,7 @@ namespace MockStockBackend.Controllers
             string search = (string) HttpContext.Request.Headers["search"];
 
             //Search for stocks that match the search string
-            var results = await _stockService.SearchMarket(search, httpClient);
+            var results = await _stockService.SearchMarket(search);
 
             return Newtonsoft.Json.JsonConvert.SerializeObject(results);
         }
@@ -146,7 +143,7 @@ namespace MockStockBackend.Controllers
             string symbol = (string)HttpContext.Request.Headers["symbol"];
             string range = (string)HttpContext.Request.Headers["range"];
 
-            var chart = await _stockService.FetchChart(symbol, range, httpClient);
+            var chart = await _stockService.FetchChart(symbol, range);
 
             return Newtonsoft.Json.JsonConvert.SerializeObject(chart);
         }
@@ -161,7 +158,7 @@ namespace MockStockBackend.Controllers
             listOfSymbols = listOfSymbols.ConvertAll(symbol => symbol.ToUpper());
 
             //Return the price and percent change of each symbol
-            var batch = await _stockService.FetchBatch(listOfSymbols, httpClient);
+            var batch = await _stockService.FetchBatch(listOfSymbols);
 
             return Newtonsoft.Json.JsonConvert.SerializeObject(batch);
         }

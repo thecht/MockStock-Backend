@@ -16,7 +16,6 @@ namespace MockStockBackend.Controllers
     [Authorize]
     [Route("api/stock")]
     [ApiController]
-
     public class StockController: ControllerBase
     {
         private readonly StockService _stockService;

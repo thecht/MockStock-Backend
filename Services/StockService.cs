@@ -249,6 +249,9 @@ namespace MockStockBackend.Services
             int resultsCount = 0;
             int calls = 1;
             List<MarketStock> results = new List<MarketStock>();
+            //Check for a blank search, return null if so
+            if(search == "")
+                return null;
 
             //Get the entire list of stock symbols and only grab the first 100 that match
             var referenceData = await httpClient.GetStringAsync("ref-data/symbols");
@@ -268,6 +271,9 @@ namespace MockStockBackend.Services
                     resultsCount++;
                 }
             }
+            //If no results, then return nothing
+            if(symbols.Count() == 0)
+                return null;
             //If results are more than 100, split up the API calls
             calls += (resultsCount-1)/100;
             //Get the information needed and trim it for the front end for each call

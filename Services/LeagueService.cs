@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using MockStockBackend.DataModels;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
+using MockStockBackend.Services;
 
 namespace MockStockBackend.Services
 {
@@ -288,16 +289,20 @@ namespace MockStockBackend.Services
                 }
             }
 
+            List<User> leaderBoard = new List<User>();
+
+            // Prevent it from moving forward with 0 Unique Stocks.  Returns an empty List.
+            if (listOfUniqueStocks.Count == 0)
+            {
+                return leaderBoard;
+            }
+
             List<StockBatch> batch = await _stockService.FetchBatch(listOfUniqueStocks);
 
-            List<User> leaderBoard = new List<User>();
-            //string[,] leaderBoard = new string[users.Count, 2];
             decimal funds;
-            //int i = 0;
             
             foreach (var user in users)
             {
-                //leaderBoard[i, 0] = user.UserId.ToString();
                 funds = user.UserCurrency;
                 var stocksForUser = user.Stocks;
                 foreach (var stock in stocksForUser)
@@ -305,9 +310,7 @@ namespace MockStockBackend.Services
                     decimal price = Convert.ToDecimal(batch.Find(x => x.symbol.Contains(stock.StockId.ToUpper())).price);
                     funds = funds + (stock.StockQuantity * price);
                 }
-                //leaderBoard[i, 1] = funds.ToString();
                 leaderBoard.Add(new User() {UserName = user.UserName, UserId = user.UserId, UserCurrency = funds});
-                //i = i + 1;
             }
 
             List<User> sortedLeaderBoard = leaderBoard.OrderByDescending(x => x.UserCurrency).ToList();

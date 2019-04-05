@@ -43,6 +43,9 @@ namespace MockStockBackend.Services
         }
 
         public async Task<Transaction> GenerateTransaction(string symbol, string amount, string price, int userId, string type){
+            // enforce capital stocks
+            symbol = symbol.ToUpper();
+            
             //Create the new transaction
             Transaction transaction = new Transaction();
             transaction.UserId = userId;

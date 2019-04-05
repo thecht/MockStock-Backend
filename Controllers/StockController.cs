@@ -130,6 +130,17 @@ namespace MockStockBackend.Controllers
         }
 
         [AllowAnonymous]
+        [HttpGet("search")]
+        public async Task<String> searchMarket(){
+            string search = (string) HttpContext.Request.Headers["search"];
+
+            //Search for stocks that match the search string
+            var results = await _stockService.SearchMarket(search, httpClient);
+
+            return Newtonsoft.Json.JsonConvert.SerializeObject(results);
+        }
+
+        [AllowAnonymous]
         [HttpGet("chart")]
         public async Task<String> getChart(){
             string symbol = (string)HttpContext.Request.Headers["symbol"];

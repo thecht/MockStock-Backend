@@ -27,7 +27,7 @@ namespace MockStockBackend.Services
         {
             // Create new user
             User user = new User();
-            user.UserCurrency = 10000000; // ten million
+            user.UserCurrency = 100000; // one hundred thousand
             user.UserName = username;
             user.UserPassword = BCrypt.Net.BCrypt.HashPassword(password);
             

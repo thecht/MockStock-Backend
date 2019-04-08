@@ -24,7 +24,10 @@ namespace MockStockBackend.Controllers
         [HttpGet]
         public async Task<string> retrievePortfolio()
         {
+            // Obtain UserID.
             var userId = Int32.Parse(HttpContext.User.FindFirst(ClaimTypes.Name).Value);
+
+            // Returns a combination of the user's available currency and a list of all of their stocks.
             var portfolio = await _portfolioService.retrievePortfolio(userId);
             return Newtonsoft.Json.JsonConvert.SerializeObject(portfolio);
         }

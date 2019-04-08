@@ -64,35 +64,12 @@ namespace MockStockBackend.Controllers
         [HttpGet]
         public IActionResult GetUser()
         {
+            // Obtain UserID.
             var userId = Int32.Parse(HttpContext.User.FindFirst(ClaimTypes.Name).Value);
+
+            // Returns a User Object.
             var user = _userService.GetUser(userId);
             return Ok(user);
         }
-
-        /*
-        [HttpPost("modifyWallet")]
-        public async Task<string> ModifyFunds()
-        {
-            // 1 - Get information for updating userAccount funds (userID, fundChanged)
-            var userID = Convert.ToInt32(HttpContext.Request.Headers["userID"]);
-            var fundChange = Convert.ToDecimal(HttpContext.Request.Headers["fundChange"]);
-            if (userID == 0 || fundChange == 0)
-            {
-                HttpContext.Response.StatusCode = 400;
-            }
-
-            // 2 - Update userCurrency in UserAccount table
-            decimal resultingFunds = await _userService.ModifyFunds(userID, fundChange);
-            if (resultingFunds < 0)
-            {
-                //HttpContext.Response.StatusCode = 409;
-                //return "{\"error\": \"username taken?\"}";
-            }
-
-            // 3 - Send request details + user info back to the client
-            HttpContext.Response.StatusCode = 201;
-            return Newtonsoft.Json.JsonConvert.SerializeObject(resultingFunds);
-        }
-        */
     }
 }

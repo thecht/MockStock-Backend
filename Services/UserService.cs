@@ -46,7 +46,7 @@ namespace MockStockBackend.Services
                 addedUser = null;
             }
             
-            // Returns the added user
+            // Returns the added User Object.
             return addedUser;
         }
 
@@ -83,23 +83,9 @@ namespace MockStockBackend.Services
 
         public User GetUser(int userId)
         {
+            // Obtain user object using their UserID.
             var user = _context.Users.SingleOrDefault(x => x.UserId == userId);
             return user;
         }
-
-        /*
-        public async Task<decimal> ModifyFunds(int userID, decimal fundChange) {
-            User result = (from Users in _context.Users
-                               where Users.UserId == userID
-                               select Users).SingleOrDefault();
-
-            result.UserCurrency = result.UserCurrency + fundChange;
-
-            //Context.SaveChanges;
-            await _context.SaveChangesAsync();
-
-            return result.UserCurrency;
-        }
-        */
     }
 }

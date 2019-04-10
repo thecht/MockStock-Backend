@@ -66,7 +66,14 @@ namespace MockStockBackend.Services
             // Prevent it from moving forward with 0 Unique Stocks.  Returns an empty Array.
             if (listOfUniqueStocks.Count == 0)
             {
-                return stockInfoPrice;
+                decimal currency = (from User in _context.Users
+                                    where User.UserId == userId
+                                    select User.UserCurrency).SingleOrDefault();
+                var ret = new {
+                    UserCurrency = currency,
+                    Stock = stockInfoPrice
+                };
+                return ret;
             }
 
             // Send Stock IDs to stockService for a price check.

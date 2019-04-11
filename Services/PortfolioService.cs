@@ -88,9 +88,9 @@ namespace MockStockBackend.Services
                 stockInfoPrice[i].StockId = Stock.StockId;
                 stockInfoPrice[i].UserId = Stock.UserId;
                 stockInfoPrice[i].StockQuantity = Stock.StockQuantity;
-                decimal price = Convert.ToDecimal(batch.Find(x => x.symbol.Contains(Stock.StockId.ToUpper())).price);
+                decimal price = Convert.ToDecimal(batch.Find(x => x.symbol.Equals(Stock.StockId.ToUpper())).price);
                 stockInfoPrice[i].StockPrice = price;
-                decimal change = Convert.ToDecimal(batch.Find(x => x.symbol.Contains(Stock.StockId.ToUpper())).changePercent);
+                decimal change = Convert.ToDecimal(batch.Find(x => x.symbol.Equals(Stock.StockId.ToUpper())).changePercent);
                 stockInfoPrice[i].ChangePercent = change;
                 i++;
             }

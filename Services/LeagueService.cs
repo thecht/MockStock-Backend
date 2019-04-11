@@ -311,7 +311,7 @@ namespace MockStockBackend.Services
                 foreach (var stock in stocksForUser)
                 {
                     // Multiply the quantity owned of each stock with the price, and add it to a sum total.
-                    decimal price = Convert.ToDecimal(batch.Find(x => x.symbol.Contains(stock.StockId.ToUpper())).price);
+                    decimal price = Convert.ToDecimal(batch.Find(x => x.symbol.Equals(stock.StockId.ToUpper())).price);
                     funds = funds + (stock.StockQuantity * price);
                 }
                 leaderBoard.Add(new User() {UserName = user.UserName, UserId = user.UserId, UserCurrency = funds});

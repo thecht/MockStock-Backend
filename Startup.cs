@@ -13,42 +13,84 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MockStockBackend.DataModels;
 using MockStockBackend.Services;
-using MockStockBackend.Middleware;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using MockStockBackend.Helpers;
 
 namespace MockStockBackend
 {
     public class Startup
     {
+        public IConfiguration Configuration { get; }
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
         }
-
-        public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
-            // Database Connection Services
+            // Set database provider
             services.AddEntityFrameworkNpgsql().AddDbContext<ApplicationDbContext>(opt =>
                 opt.UseNpgsql(Configuration.GetConnectionString("PostgreSQLConnectionString")));
+            if(Environment.GetEnvironmentVariable("ASPNET_ENVIRONMENT") == "PRODUCTION")
+            {
+                services.BuildServiceProvider().GetService<ApplicationDbContext>().Database.Migrate();
+            }
+
+            // services.AddEntityFrameworkNpgsql().AddDbContext<ApplicationDbContext>(opt =>
+            //     opt.UseNpgsql(Configuration.GetConnectionString("PostgreSQLConnectionString")));
             // services.AddEntityFrameworkMySql().AddDbContext<ApplicationDbContext>(opt =>
             //     opt.UseMySql(Configuration.GetConnectionString("MySQLConnectionString")));
-            // services.AddEntityFrameworkSqlServer().AddDbContext<ApplicationDbContext>(opt =>
-            //     opt.UseSqlServer(Configuration.GetConnectionString("SqlServerConnectionString")));
-
+            
             // Business Logic Services
+            var appSettingsSection = Configuration.GetSection("AppSettings");
+            services.Configure<AppSettings>(appSettingsSection);
             services.AddScoped<LeagueService>();
             services.AddScoped<UserService>();
+            services.AddScoped<StockService>();
+            services.AddScoped<TransactionService>();
+            services.AddScoped<PortfolioService>();
+
+            // configure jwt authentication
+            var appSettings = appSettingsSection.Get<AppSettings>();
+            var key = Encoding.ASCII.GetBytes(appSettings.Secret);
+            services.AddAuthentication(x =>
+            {
+                x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(x =>
+            {
+                x.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = context =>
+                    {
+                        var userId = Int32.Parse(context.Principal.Identity.Name);
+                        context.HttpContext.Items["userId"] = userId;
+                        return Task.CompletedTask;
+                    }
+                };
+                x.RequireHttpsMetadata = false;
+                x.SaveToken = true;
+                x.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = false,
+                    ValidateAudience = false
+                };
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
             app.UseHttpsRedirection();
-            app.UseMSAuthenticationMiddleware();
+            app.UseAuthentication();
             app.UseMvc();
         }
     }

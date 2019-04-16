@@ -294,14 +294,13 @@ namespace MockStockBackend.Services
 
             // Prevent it from moving forward with 0 Unique Stocks.  Returns an empty List.
             List<User> leaderBoard = new List<User>();
-            if (listOfUniqueStocks.Count == 0)
-            {
-                return leaderBoard;
-            }
 
             // Use Stock Service and have it compute the current price of every stock.
-            List<StockBatch> batch = await _stockService.FetchBatch(listOfUniqueStocks);
-
+            List<StockBatch> batch = null; //= await _stockService.FetchBatch(listOfUniqueStocks);
+            if (listOfUniqueStocks.Count != 0) {
+                batch = await _stockService.FetchBatch(listOfUniqueStocks);
+            }
+            
             // For every user; have it calculate their current available cash with the amount they hold in stocks.
             decimal funds;
             foreach (var user in users)

@@ -23,48 +23,54 @@ namespace MockStockBackend.Controllers
 
         [AllowAnonymous]
         [HttpPost]
-        public async Task<string> CreateUser()
+        public async Task<IActionResult> CreateUser()
         {
             // 1 - Get user creation details (username, password)
             var username = (string)HttpContext.Request.Headers["username"];
             var password = (string)HttpContext.Request.Headers["password"];
             if(username == null || password == null)
             {
-                HttpContext.Response.StatusCode = 400;
-                return "{\"error\": \"incomplete headers. expects username and password.\"}";
+                return BadRequest();
             }
             
             // 2 - Generate a new user
             User newUser = await _userService.GenerateNewUser(username, password);
             if (newUser == null)
             {
-                HttpContext.Response.StatusCode = 409;
-                return "{\"error\": \"username taken?\"}";
+                return StatusCode(409);
             }
 
             // 3 - Send request details + user info back to the client
-            HttpContext.Response.StatusCode = 201;
-            return Newtonsoft.Json.JsonConvert.SerializeObject(newUser);
+            return StatusCode(201, newUser);
         }
 
         [AllowAnonymous]
         [HttpPost("token")]
         public IActionResult Authenticate()
         {
+            // 1 - Get login details
             var username = (string)HttpContext.Request.Headers["username"];
             var password = (string)HttpContext.Request.Headers["password"];
+            if (username == null || password == null)
+            {
+                return BadRequest();
+            }
+
+            // 2 - Generate a new token for the user
             var user = _userService.Authenticate(username, password);
             
+            // 3 - Ensure the password was correct
             if(user == null)
                 return BadRequest(new { message = "Username or password is incorrect." } );
             
+            // 4 - Send back the user with new token
             return Ok(user);
-}
+        }
 
         [HttpGet]
         public IActionResult GetUser()
         {
-            // Obtain UserID.
+            // Obtain UserID from token.
             var userId = Int32.Parse(HttpContext.User.FindFirst(ClaimTypes.Name).Value);
 
             // Returns a User Object.

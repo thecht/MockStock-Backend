@@ -13,7 +13,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using MockStockBackend.DataModels;
-using MockStockBackend.Helpers;
 using Newtonsoft.Json.Linq;
 
 namespace MockStockBackend.Services
@@ -21,13 +20,11 @@ namespace MockStockBackend.Services
     public class StockService
     {
         private readonly ApplicationDbContext _context;
-        private readonly AppSettings _appSettings;
         private readonly HttpClient httpClient;
 
-        public StockService(ApplicationDbContext context, IOptions<AppSettings> appSettings)
+        public StockService(ApplicationDbContext context)
         {
             _context = context;
-            _appSettings = appSettings.Value;
             httpClient = new HttpClient();
             httpClient.BaseAddress = new Uri("https://api.iextrading.com/1.0/");
         }

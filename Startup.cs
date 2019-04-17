@@ -16,7 +16,6 @@ using MockStockBackend.Services;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using MockStockBackend.Helpers;
 
 namespace MockStockBackend
 {
@@ -36,19 +35,25 @@ namespace MockStockBackend
             // Set database provider
             services.AddEntityFrameworkNpgsql().AddDbContext<ApplicationDbContext>(opt =>
                 opt.UseNpgsql(Configuration.GetConnectionString("PostgreSQLConnectionString")));
+            
+            // Do environment-specific setup.
             if(Environment.GetEnvironmentVariable("ASPNET_ENVIRONMENT") == "PRODUCTION")
             {
+                // Apply any new database migrations
                 services.BuildServiceProvider().GetService<ApplicationDbContext>().Database.Migrate();
             }
-
+            else // Development Environment 
+            {
+                // Set a development secret for JWT token authentication. (WARNING: DO NOT PUT PRODUCTION SECRET HERE!)
+                Environment.SetEnvironmentVariable("APP_TOKENSECRET", "lu2ijh342inlksIUSA84likj3h24uibh23TE5eu2jh34iluli2");
+            }
+            
             // services.AddEntityFrameworkNpgsql().AddDbContext<ApplicationDbContext>(opt =>
             //     opt.UseNpgsql(Configuration.GetConnectionString("PostgreSQLConnectionString")));
             // services.AddEntityFrameworkMySql().AddDbContext<ApplicationDbContext>(opt =>
             //     opt.UseMySql(Configuration.GetConnectionString("MySQLConnectionString")));
             
             // Business Logic Services
-            var appSettingsSection = Configuration.GetSection("AppSettings");
-            services.Configure<AppSettings>(appSettingsSection);
             services.AddScoped<LeagueService>();
             services.AddScoped<UserService>();
             services.AddScoped<StockService>();
@@ -56,8 +61,7 @@ namespace MockStockBackend
             services.AddScoped<PortfolioService>();
 
             // configure jwt authentication
-            var appSettings = appSettingsSection.Get<AppSettings>();
-            var key = Encoding.ASCII.GetBytes(appSettings.Secret);
+            var key = Encoding.ASCII.GetBytes(Environment.GetEnvironmentVariable("APP_TOKENSECRET"));
             services.AddAuthentication(x =>
             {
                 x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

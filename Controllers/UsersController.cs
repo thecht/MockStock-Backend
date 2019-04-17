@@ -29,16 +29,12 @@ namespace MockStockBackend.Controllers
             var username = (string)HttpContext.Request.Headers["username"];
             var password = (string)HttpContext.Request.Headers["password"];
             if(username == null || password == null)
-            {
                 return BadRequest();
-            }
             
             // 2 - Generate a new user
             User newUser = await _userService.GenerateNewUser(username, password);
             if (newUser == null)
-            {
                 return StatusCode(409);
-            }
 
             // 3 - Send request details + user info back to the client
             return StatusCode(201, newUser);
@@ -52,25 +48,21 @@ namespace MockStockBackend.Controllers
             var username = (string)HttpContext.Request.Headers["username"];
             var password = (string)HttpContext.Request.Headers["password"];
             if (username == null || password == null)
-            {
                 return BadRequest();
-            }
 
             // 2 - Generate a new token for the user
             var user = _userService.Authenticate(username, password);
-            
-            // 3 - Ensure the password was correct
             if(user == null)
-                return BadRequest(new { message = "Username or password is incorrect." } );
+                return BadRequest();
             
-            // 4 - Send back the user with new token
+            // 3 - Send back the user with new token
             return Ok(user);
         }
 
         [HttpGet]
         public IActionResult GetUser()
         {
-            // Obtain UserID from token.
+            // Obtain UserID from JWT token.
             var userId = Int32.Parse(HttpContext.User.FindFirst(ClaimTypes.Name).Value);
 
             // Returns a User Object.

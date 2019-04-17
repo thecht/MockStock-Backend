@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using MockStockBackend.DataModels;
-using MockStockBackend.Helpers;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using System.Dynamic;
@@ -20,13 +19,11 @@ namespace MockStockBackend.Services
     public class PortfolioService
     {
         private readonly ApplicationDbContext _context;
-        private readonly AppSettings _appSettings;
         private readonly StockService _stockService;
 
-        public PortfolioService(ApplicationDbContext context, IOptions<AppSettings> appSettings, StockService stockService)
+        public PortfolioService(ApplicationDbContext context, StockService stockService)
         {
             _context = context;
-            _appSettings = appSettings.Value;
             _stockService = stockService;
         }
 

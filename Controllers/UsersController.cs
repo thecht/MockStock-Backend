@@ -42,7 +42,7 @@ namespace MockStockBackend.Controllers
 
         [AllowAnonymous]
         [HttpPost("token")]
-        public IActionResult Authenticate()
+        public async Task<IActionResult> Authenticate()
         {
             // 1 - Get login details
             var username = (string)HttpContext.Request.Headers["username"];
@@ -51,7 +51,7 @@ namespace MockStockBackend.Controllers
                 return BadRequest();
 
             // 2 - Generate a new token for the user
-            var user = _userService.Authenticate(username, password);
+            var user = await _userService.Authenticate(username, password);
             if(user == null)
                 return BadRequest();
             
@@ -62,11 +62,15 @@ namespace MockStockBackend.Controllers
         [HttpGet]
         public IActionResult GetUser()
         {
-            // Obtain UserID from JWT token.
+            // 1 - Obtain UserID from JWT token.
             var userId = Int32.Parse(HttpContext.User.FindFirst(ClaimTypes.Name).Value);
 
-            // Returns a User Object.
+            // 2 - Returns a User Object.
             var user = _userService.GetUser(userId);
+            if(user == null)
+                return StatusCode(404);
+            
+            // 3 - Returns the user object
             return Ok(user);
         }
     }

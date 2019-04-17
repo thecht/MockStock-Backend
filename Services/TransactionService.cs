@@ -10,18 +10,15 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using MockStockBackend.DataModels;
-using MockStockBackend.Helpers;
 
 namespace MockStockBackend.Services
 {
     public class TransactionService
     {
         private readonly ApplicationDbContext _context;
-        private readonly AppSettings _appSettings;
-        public TransactionService(ApplicationDbContext context, IOptions<AppSettings> appSettings)
+        public TransactionService(ApplicationDbContext context)
         {
             _context = context;
-            _appSettings = appSettings.Value;
         }
 
         public List<Transaction> UserHistory(int userId)

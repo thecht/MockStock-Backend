@@ -37,7 +37,10 @@ namespace MockStockBackend.Controllers
                 return StatusCode(409);
 
             // 3 - Send request details + user info back to the client
-            return StatusCode(201, newUser);
+            var res = new OkObjectResult(newUser);
+            res.StatusCode = 201; // ResourceCreated Status Code
+
+            return Ok(res);
         }
 
         [AllowAnonymous]
